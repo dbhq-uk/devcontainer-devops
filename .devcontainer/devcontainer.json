@@ -1,0 +1,7 @@
+{
+    "build": {
+        // Path is relative to the devcontainer.json file.
+        "dockerfile": "Dockerfile",
+        "target": "dev"
+    }
+}

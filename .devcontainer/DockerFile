@@ -1,0 +1,57 @@
+######################################################### TOOLCHAIN VERSIONING #########################################
+ARG MULTISTAGE_BUILDER_VERSION
+ARG UBUNTU_VERSION
+ARG DOCKER_VERSION
+ARG KUBECTL_VERSION
+ARG OC_CLI_VERSION
+ARG HELM_VERSION
+ARG TERRAFORM_VERSION
+ARG AWS_CLI_VERSION
+ARG AZ_CLI_VERSION
+ARG GCLOUD_VERSION
+ARG ANSIBLE_VERSION
+ARG JINJA_VERSION
+ARG OPENSSH_VERSION
+ARG CRICTL_VERSION
+ARG VAULT_VERSION
+ARG VELERO_VERSION
+ARG SENTINEL_VERSION
+ARG STERN_VERSION
+ARG KUBELOGIN_VERSION
+ARG ZSH_VERSION
+
+######################################################### BINARY-DOWNLOADER ############################################
+
+FROM alpine:latest as build
+
+USER root
+WORKDIR /root/download
+
+RUN apk --update add \
+    curl \
+    openssl \
+    unzip \
+    wget
+
+RUN if [[ ! -z ${HELM_VERSION} ]] ; then \
+      mkdir helm && curl -SsL --retry 5 "https://get.helm.sh/helm-v$HELM_VERSION-linux-$TARGETARCH.tar.gz" | tar xz -C ./helm && \
+      mv "/root/download/helm/linux-${TARGETARCH}/helm" "/root/download/binaries/helm"; \
+    fi
+
+######################################################### BASE-IMAGE ###################################################
+
+
+FROM mcr.microsoft.com/devcontainers/base:ubuntu as dev
+
+ARG PKGS="\
+ncat\
+"
+
+RUN apt update && \
+    apt install --no-install-recommends -y ${PKGS} && \
+    apt upgrade -y && \
+    apt autoremove --purge -y
+
+
+
+CMD ["/bin/bash"]
