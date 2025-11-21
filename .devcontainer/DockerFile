@@ -1,49 +1,24 @@
 ######################################################### TOOLCHAIN VERSIONING #########################################
 ARG MULTISTAGE_BUILDER_VERSION
-ARG UBUNTU_VERSION
-ARG DOCKER_VERSION
+ARG UBUNTU_VERSION=22.01
+ARG DOCKER_VERSION=
 ARG KUBECTL_VERSION
-ARG OC_CLI_VERSION
 ARG HELM_VERSION
 ARG TERRAFORM_VERSION
-ARG AWS_CLI_VERSION
 ARG AZ_CLI_VERSION
-ARG GCLOUD_VERSION
 ARG ANSIBLE_VERSION
-ARG JINJA_VERSION
-ARG OPENSSH_VERSION
-ARG CRICTL_VERSION
-ARG VAULT_VERSION
-ARG VELERO_VERSION
-ARG SENTINEL_VERSION
-ARG STERN_VERSION
+ARG POWERSHELL_VERSION
 ARG KUBELOGIN_VERSION
 ARG ZSH_VERSION
 
-######################################################### BINARY-DOWNLOADER ############################################
+FROM mcr.microsoft.com/devcontainers/base:ubuntu-$UBUNTU_VERSION AS final
 
-FROM alpine:latest as build
+ARG USERNAME=vscode
 
-USER root
-WORKDIR /root/download
-
-RUN apk --update add \
-    curl \
-    openssl \
-    unzip \
-    wget
-
-RUN if [[ ! -z ${HELM_VERSION} ]] ; then \
-      mkdir helm && curl -SsL --retry 5 "https://get.helm.sh/helm-v$HELM_VERSION-linux-$TARGETARCH.tar.gz" | tar xz -C ./helm && \
-      mv "/root/download/helm/linux-${TARGETARCH}/helm" "/root/download/binaries/helm"; \
-    fi
-
-######################################################### BASE-IMAGE ###################################################
-
-
-FROM mcr.microsoft.com/devcontainers/base:ubuntu as dev
 
 ARG PKGS="\
+gnupg \
+software-properties-common \
 ncat\
 "
 
@@ -53,5 +28,36 @@ RUN apt update && \
     apt autoremove --purge -y
 
 
+## Install `az` (Azure CLI)
+COPY ./files/scripts/install-azure-cli.sh /tmp
+RUN sh /tmp/install-azure-cli.sh
 
-CMD ["/bin/bash"]
+## Install Terraform
+COPY ./files/scripts/install-terraform.sh /tmp
+RUN sh /tmp/install-terraform.sh
+
+## Install Terragrunt
+COPY ./files/scripts/install-terragrunt.sh /tmp
+RUN sh /tmp/install-terragrunt.sh
+
+## Install Docker
+COPY ./files/scripts/install-docker.sh /tmp
+RUN sh /tmp/install-docker.sh
+
+## Install Ansible
+COPY ./files/scripts/install-ansible.sh /tmp
+RUN sh /tmp/install-ansible.sh
+
+## Install Helm
+COPY ./files/scripts/install-helm.sh /tmp
+RUN sh /tmp/install-helm.sh
+
+## Install PowerShell
+COPY ./files/scripts/install-powershell.sh /tmp
+RUN sh /tmp/install-powershell.sh
+
+
+## Cleanup
+#RUN rm -rf /tmp/*
+
+USER $USERNAME
