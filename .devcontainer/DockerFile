@@ -63,3 +63,7 @@ RUN sh /tmp/install-powershell.sh
 #RUN rm -rf /tmp/*
 
 USER $USERNAME
+
+COPY ./files/.bashrc /home/vscode/.bashrc
+COPY ./files/.bash_aliases /home/vscode/.bash_aliases
+
