@@ -1,0 +1,19 @@
+{
+    "build": {
+        // Path is relative to the devcontainer.json file.
+        "dockerfile": "Dockerfile",
+        "context": "..",
+        "target": "final", // last stage of your Dockerfile
+        "args": {
+            "MULTISTAGE_BUILDER_VERSION": "2022-12-21",
+            "UBUNTU_VERSION": "22.04"    
+        }
+    },
+    "remoteUser": "vscode",
+    "mounts": [
+        "source=${localWorkspaceFolder},target=/workspace/devcontainer,type=bind,consistency=cached"
+    ],
+    "workspaceMount": "source=dev-volume,target=/workspace,type=volume",
+    "workspaceFolder": "/workspace",
+    "postCreateCommand": "sudo chown -R vscode:vscode /workspace"
+}
