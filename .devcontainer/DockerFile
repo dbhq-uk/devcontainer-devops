@@ -9,7 +9,6 @@ ARG AZ_CLI_VERSION
 ARG ANSIBLE_VERSION
 ARG POWERSHELL_VERSION
 ARG KUBELOGIN_VERSION
-ARG ZSH_VERSION
 
 FROM mcr.microsoft.com/devcontainers/base:ubuntu-$UBUNTU_VERSION AS final
 
@@ -27,6 +26,9 @@ RUN apt update && \
     apt upgrade -y && \
     apt autoremove --purge -y
 
+## Install Python tools
+COPY ./files/scripts/install-python-tools.sh /tmp
+RUN sh /tmp/install-python-tools.sh
 
 ## Install `az` (Azure CLI)
 COPY ./files/scripts/install-azure-cli.sh /tmp
