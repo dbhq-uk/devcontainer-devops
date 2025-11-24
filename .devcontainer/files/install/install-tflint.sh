@@ -1,6 +1,10 @@
 #!/bin/bash
 set -e
 
+WORKDIR="/tmp/install-tflint"
+mkdir -p "${WORKDIR}"
+cd "${WORKDIR}"
+
 # Get latest version if not specified
 if [ -z "$1" ]; then
     echo "Fetching latest tflint version..."
@@ -19,9 +23,6 @@ curl -L "https://github.com/terraform-linters/tflint/releases/download/v${VERSIO
 unzip tflint.zip
 chmod +x tflint
 mv tflint /usr/local/bin/
-
-# Cleanup
-rm tflint.zip
 
 # Verify installation
 tflint --version

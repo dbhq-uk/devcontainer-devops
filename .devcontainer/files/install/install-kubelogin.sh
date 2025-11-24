@@ -1,6 +1,10 @@
 #!/bin/bash
 set -e
 
+WORKDIR="/tmp/install-kubelogin"
+mkdir -p "${WORKDIR}"
+cd "${WORKDIR}"
+
 # Get latest version if not specified
 if [ -z "$1" ]; then
     echo "Fetching latest kubelogin version..."
@@ -19,9 +23,6 @@ curl -LO "https://github.com/Azure/kubelogin/releases/download/v${VERSION}/kubel
 unzip kubelogin-linux-amd64.zip
 chmod +x bin/linux_amd64/kubelogin
 mv bin/linux_amd64/kubelogin /usr/local/bin/
-
-# Cleanup
-#rm -rf bin kubelogin-linux-amd64.zip
 
 # Verify installation
 kubelogin --version

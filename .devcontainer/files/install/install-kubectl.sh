@@ -1,6 +1,10 @@
 #!/bin/bash
 set -e
 
+WORKDIR="/tmp/install-kubectl"
+mkdir -p "${WORKDIR}"
+cd "${WORKDIR}"
+
 # Get latest version if not specified
 if [ -z "$1" ]; then
     echo "Fetching latest kubectl version..."

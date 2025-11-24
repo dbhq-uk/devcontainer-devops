@@ -1,6 +1,10 @@
 #!/bin/bash
 set -e
 
+WORKDIR="/tmp/install-helm"
+mkdir -p "${WORKDIR}"
+cd "${WORKDIR}"
+
 # Get latest version if not specified
 if [ -z "$1" ]; then
     echo "Fetching latest Helm version..."
@@ -24,9 +28,6 @@ sha256sum -c helm-v${VERSION}-linux-amd64.tar.gz.sha256sum
 # Extract and install
 tar -zxvf helm-v${VERSION}-linux-amd64.tar.gz
 mv linux-amd64/helm /usr/local/bin/helm
-
-# Cleanup
-rm -rf linux-amd64 helm-v${VERSION}-linux-amd64.tar.gz helm-v${VERSION}-linux-amd64.tar.gz.sha256sum
 
 # Verify installation
 helm version
