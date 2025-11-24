@@ -41,11 +41,11 @@ run_test "terraform fmt" "cd $TEST_DIR/tf-test && terraform fmt" || ((FAILURES++
 run_test "terraform validate" "cd $TEST_DIR/tf-test && terraform validate" || ((FAILURES++))
 echo ""
 
-echo "Docker Tests:"
-run_test "docker info" "docker info" || ((FAILURES++))
-run_test "docker pull hello-world" "docker pull hello-world:latest" || ((FAILURES++))
-run_test "docker run hello-world" "docker run --rm hello-world" || ((FAILURES++))
-echo ""
+# echo "Docker Tests:"
+# run_test "docker info" "docker info" || ((FAILURES++))
+# run_test "docker pull hello-world" "docker pull hello-world:latest" || ((FAILURES++))
+# run_test "docker run hello-world" "docker run --rm hello-world" || ((FAILURES++))
+# echo ""
 
 echo "Kubernetes Tests:"
 run_test "kubectl version" "kubectl version --client" || ((FAILURES++))

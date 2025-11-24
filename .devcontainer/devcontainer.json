@@ -48,8 +48,12 @@
                 "ms-vscode-remote.remote-containers"
             ],
             "settings": {
-                "terminal.integrated.defaultProfile.linux": "bash",
+                "terminal.integrated.defaultProfile.linux": "zsh",
                 "terminal.integrated.profiles.linux": {
+                    "zsh": {
+                        "path": "/bin/zsh",
+                        "icon": "terminal-linux"
+                    },
                     "bash": {
                         "path": "/bin/bash",
                         "icon": "terminal-bash"

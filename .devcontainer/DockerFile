@@ -81,18 +81,9 @@ RUN /tmp/install/install-yq.sh ${YQ_VERSION} && \
 # Cleanup
 #RUN rm -rf /tmp/* /var/tmp/* /var/lib/apt/lists/*
 
+# Set zsh as default shell for vscode user
+RUN chsh -s /bin/zsh ${USERNAME}
 RUN cp -r /home/vscode/. /tmp-home
-
-# # Copy shell configuration
-# COPY ./files/.bash_aliases /home/vscode/.bash_aliases
-# COPY ./files/.environment /home/vscode/.environment
-
-# # Source environment in bashrc
-# RUN echo '' >> /home/vscode/.bashrc && \
-#     echo '# Load DevContainer environment' >> /home/vscode/.bashrc && \
-#     echo 'if [ -f ~/.environment ]; then' >> /home/vscode/.bashrc && \
-#     echo '    source ~/.environment' >> /home/vscode/.bashrc && \
-#     echo 'fi' >> /home/vscode/.bashrc
 
 COPY ./files/home/.bash_aliases /tmp-home/.bash_aliases
 COPY ./files/home/.environment /tmp-home/.environment
@@ -109,6 +100,8 @@ COPY ./files/entrypoint.sh /usr/local/bin/entrypoint.sh
 
 RUN git clone https://github.com/zsh-users/zsh-autosuggestions /tmp-home/.oh-my-zsh/custom/plugins/zsh-autosuggestions && \
 git clone https://github.com/zsh-users/zsh-syntax-highlighting.git /tmp-home/.oh-my-zsh/custom/plugins/zsh-syntax-highlighting
+
+
 
 USER $USERNAME
 
