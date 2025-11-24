@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 set -e
 
 WORKDIR="/tmp/install-powershell"
@@ -27,3 +27,18 @@ apt-get update
 
 # Install PowerShell
 apt-get install -y powershell
+
+# Configure PSGallery as trusted repository
+echo "Configuring PSGallery..."
+pwsh -NoProfile -NonInteractive -Command "Set-PSRepository -Name 'PSGallery' -InstallationPolicy 'Trusted'"
+
+# Install common PowerShell modules
+echo "Installing PowerShell modules..."
+MODULES="Az Pester PSScriptAnalyzer powershell-yaml ImportExcel"
+
+for MODULE in ${MODULES}; do
+    echo "Installing module: ${MODULE}"
+    pwsh -NoProfile -NonInteractive -Command "if (-not (Get-Module -ListAvailable -Name '${MODULE}')) { Install-Module -Name '${MODULE}' -Scope AllUsers -Repository PSGallery -Force -AllowClobber }"
+done
+
+echo "PowerShell modules installed successfully"
