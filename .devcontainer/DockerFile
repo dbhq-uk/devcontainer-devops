@@ -96,7 +96,7 @@ RUN echo '' >> /tmp-home/.bashrc && \
 COPY ./files/entrypoint.sh /usr/local/bin/entrypoint.sh
 
 RUN git clone https://github.com/zsh-users/zsh-autosuggestions /tmp-home/.oh-my-zsh/custom/plugins/zsh-autosuggestions && \
-git clone https://github.com/zsh-users/zsh-syntax-highlighting.git /tmp-home/.oh-my-zsh/custom/plugins/zsh-syntax-highlighting
+    git clone https://github.com/zsh-users/zsh-syntax-highlighting.git /tmp-home/.oh-my-zsh/custom/plugins/zsh-syntax-highlighting
 
 # Cleanup - remove install temp directories but keep /tmp-home
 RUN rm -rf /tmp/install-* /tmp/install /var/lib/apt/lists/*
