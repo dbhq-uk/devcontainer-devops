@@ -1,0 +1,74 @@
+# Environment variables for DevContainer
+
+# Default editor
+export EDITOR=vim
+export VISUAL=vim
+
+# Terraform settings
+export TF_PLUGIN_CACHE_DIR="$HOME/.terraform.d/plugin-cache"
+mkdir -p $TF_PLUGIN_CACHE_DIR
+export TF_CLI_ARGS_apply="-auto-approve=false"
+export TF_CLI_ARGS_destroy="-auto-approve=false"
+
+# Terragrunt settings
+export TERRAGRUNT_DOWNLOAD="$HOME/.terragrunt-cache"
+mkdir -p $TERRAGRUNT_DOWNLOAD
+
+# Azure CLI settings
+export AZURE_CORE_OUTPUT=table
+export AZURE_CORE_COLLECT_TELEMETRY=false
+
+# Docker settings
+export DOCKER_BUILDKIT=1
+export COMPOSE_DOCKER_CLI_BUILD=1
+
+# Kubernetes settings
+export KUBECONFIG=$HOME/.kube/config
+export KUBE_EDITOR=vim
+
+# Python settings
+export PYTHONDONTWRITEBYTECODE=1
+export PYTHONUNBUFFERED=1
+export PIP_NO_CACHE_DIR=1
+
+# History settings
+export HISTSIZE=10000
+export HISTFILESIZE=20000
+export HISTCONTROL=ignoredups:erasedups
+export HISTTIMEFORMAT="%Y-%m-%d %H:%M:%S "
+
+# Colors for ls
+export LS_COLORS='di=34:ln=35:so=32:pi=33:ex=31:bd=34;46:cd=34;43:su=30;41:sg=30;46:tw=30;42:ow=30;43'
+
+# Enable kubectl bash completion
+source <(kubectl completion bash)
+complete -F __start_kubectl k
+
+# Enable helm bash completion
+source <(helm completion bash)
+complete -F __start_helm h
+
+# Enable terraform bash completion
+complete -C /usr/local/bin/terraform terraform
+complete -C /usr/local/bin/terraform tf
+
+# Enable az bash completion
+source /etc/bash_completion.d/azure-cli 2>/dev/null || true
+
+# Ansible settings
+export ANSIBLE_NOCOWS=1
+export ANSIBLE_HOST_KEY_CHECKING=False
+
+# Path additions
+export PATH="$HOME/.local/bin:$PATH"
+
+# Git configuration helpers
+git config --global core.editor vim
+git config --global pull.rebase false
+git config --global init.defaultBranch main
+git config --global color.ui auto
+
+# Welcome message
+echo "🚀 DevOps DevContainer Ready!"
+echo "Run 'validate' to check all tools"
+echo "Run 'testall' to run integration tests"

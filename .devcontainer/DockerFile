@@ -1,69 +1,97 @@
 ######################################################### TOOLCHAIN VERSIONING #########################################
-ARG MULTISTAGE_BUILDER_VERSION
-ARG UBUNTU_VERSION=22.01
+# Leave version blank to install latest, or specify a version to pin
+ARG UBUNTU_VERSION=22.04
 ARG DOCKER_VERSION=
+ARG KUBECTL_VERSION=
+ARG HELM_VERSION=
+ARG TERRAFORM_VERSION=
+ARG TERRAGRUNT_VERSION=
+ARG AZ_CLI_VERSION=
+ARG ANSIBLE_VERSION=
+ARG POWERSHELL_VERSION=
+ARG KUBELOGIN_VERSION=
+ARG YQ_VERSION=
+ARG JQ_VERSION=
+ARG TFLINT_VERSION=
+ARG CHECKOV_VERSION=
+
+FROM mcr.microsoft.com/devcontainers/base:ubuntu-${UBUNTU_VERSION} AS final
+
+ARG USERNAME=vscode
 ARG KUBECTL_VERSION
 ARG HELM_VERSION
 ARG TERRAFORM_VERSION
+ARG TERRAGRUNT_VERSION
 ARG AZ_CLI_VERSION
 ARG ANSIBLE_VERSION
 ARG POWERSHELL_VERSION
 ARG KUBELOGIN_VERSION
+ARG YQ_VERSION
+ARG JQ_VERSION
+ARG TFLINT_VERSION
+ARG CHECKOV_VERSION
 
-FROM mcr.microsoft.com/devcontainers/base:ubuntu-$UBUNTU_VERSION AS final
-
-ARG USERNAME=vscode
-
-
+# Install base packages
 ARG PKGS="\
-gnupg \
-software-properties-common \
-ncat\
-"
+    gnupg \
+    software-properties-common \
+    ncat \
+    curl \
+    wget \
+    git \
+    unzip \
+    jq \
+    ca-certificates \
+    "
 
-RUN apt update && \
-    apt install --no-install-recommends -y ${PKGS} && \
-    apt upgrade -y && \
-    apt autoremove --purge -y
+RUN apt-get update && \
+    apt-get install --no-install-recommends -y ${PKGS} && \
+    apt-get upgrade -y && \
+    apt-get autoremove --purge -y && \
+    rm -rf /var/lib/apt/lists/*
 
-## Install Python tools
-COPY ./files/scripts/install-python-tools.sh /tmp
-RUN sh /tmp/install-python-tools.sh
+# Copy all installation scripts
+COPY ./files/scripts/*.sh /tmp/scripts/
+RUN chmod +x /tmp/scripts/*.sh
 
-## Install `az` (Azure CLI)
-COPY ./files/scripts/install-azure-cli.sh /tmp
-RUN sh /tmp/install-azure-cli.sh
+RUN /tmp/scripts/install-python-tools.sh
 
-## Install Terraform
-COPY ./files/scripts/install-terraform.sh /tmp
-RUN sh /tmp/install-terraform.sh
+RUN /tmp/scripts/install-azure-cli.sh
 
-## Install Terragrunt
-COPY ./files/scripts/install-terragrunt.sh /tmp
-RUN sh /tmp/install-terragrunt.sh
+RUN /tmp/scripts/install-terraform.sh ${TERRAFORM_VERSION} && \
+    /tmp/scripts/install-terragrunt.sh ${TERRAGRUNT_VERSION} && \
+    /tmp/scripts/install-tflint.sh ${TFLINT_VERSION} && \
+    /tmp/scripts/install-checkov.sh ${CHECKOV_VERSION} 
 
-## Install Docker
-COPY ./files/scripts/install-docker.sh /tmp
-RUN sh /tmp/install-docker.sh
+RUN /tmp/scripts/install-docker.sh
 
-## Install Ansible
-COPY ./files/scripts/install-ansible.sh /tmp
-RUN sh /tmp/install-ansible.sh
+RUN /tmp/scripts/install-ansible.sh ${ANSIBLE_VERSION}
 
-## Install Helm
-COPY ./files/scripts/install-helm.sh /tmp
-RUN sh /tmp/install-helm.sh
+RUN /tmp/scripts/install-helm.sh ${HELM_VERSION} && \
+    /tmp/scripts/install-kubectl.sh ${KUBECTL_VERSION} && \
+    /tmp/scripts/install-kubelogin.sh ${KUBELOGIN_VERSION} 
 
-## Install PowerShell
-COPY ./files/scripts/install-powershell.sh /tmp
-RUN sh /tmp/install-powershell.sh
+#RUN /tmp/scripts/install-powershell.sh ${POWERSHELL_VERSION}
 
+# RUN /tmp/scripts/install-yq.sh ${YQ_VERSION} && \
+#     /tmp/scripts/install-jq.sh ${JQ_VERSION} && \
+#     /tmp/scripts/install-git-crypt.sh && \
+#     /tmp/scripts/install-pre-commit.sh
 
-## Cleanup
-#RUN rm -rf /tmp/*
+# Cleanup
+#RUN rm -rf /tmp/* /var/tmp/* /var/lib/apt/lists/*
 
 USER $USERNAME
 
-COPY ./files/.bashrc /home/vscode/.bashrc
-COPY ./files/.bash_aliases /home/vscode/.bash_aliases
+# # # Copy shell configuration
+# COPY ./files/.bashrc /home/vscode/.bashrc
+# COPY ./files/.bash_aliases /home/vscode/.bash_aliases
+# COPY ./files/.environment /home/vscode/.environment
+
+# # Source environment in bashrc
+# RUN echo '' >> /home/vscode/.bashrc && \
+#     echo '# Load DevContainer environment' >> /home/vscode/.bashrc && \
+#     echo 'if [ -f ~/.environment ]; then' >> /home/vscode/.bashrc && \
+#     echo '    source ~/.environment' >> /home/vscode/.bashrc && \
+#     echo 'fi' >> /home/vscode/.bashrc
 

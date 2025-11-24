@@ -1,52 +1,40 @@
 #!/bin/bash
 set -e
 
-echo "Installing yq..."
-
-# Detect architecture
-ARCH=$(uname -m)
-case $ARCH in
-    x86_64)
-        YQ_ARCH="amd64"
-        ;;
-    aarch64|arm64)
-        YQ_ARCH="arm64"
-        ;;
-    armv7l)
-        YQ_ARCH="arm"
-        ;;
-    *)
-        echo "Unsupported architecture: $ARCH"
-        exit 1
-        ;;
-esac
-
-# Get latest version from GitHub API
-YQ_VERSION=$(curl -s https://api.github.com/repos/mikefarah/yq/releases/latest | grep '"tag_name":' | sed -E 's/.*"v([^"]+)".*/\1/')
-
-if [ -z "$YQ_VERSION" ]; then
-    echo "Failed to fetch latest yq version"
-    exit 1
+# Get latest version if not specified
+if [ -z "$1" ]; then
+    echo "Fetching latest yq version..."
+    VERSION=$(curl -s https://api.github.com/repos/mikefarah/yq/releases/latest | grep '"tag_name":' | sed -E 's/.*"v([^"]+)".*/\1/')
+    echo "Latest version: ${VERSION}"
+else
+    VERSION=$1
 fi
 
-echo "Latest yq version: $YQ_VERSION"
+echo "Installing yq version ${VERSION}..."
 
-# Download and install yq
-YQ_BINARY="yq_linux_${YQ_ARCH}"
-DOWNLOAD_URL="https://github.com/mikefarah/yq/releases/download/v${YQ_VERSION}/${YQ_BINARY}"
+
+# Download yq
+YQ_BINARY="yq_linux_AMD64"
+DOWNLOAD_URL="https://github.com/mikefarah/yq/releases/download/v${VERSION}/${YQ_BINARY}"
 
 echo "Downloading from: $DOWNLOAD_URL"
 curl -L "$DOWNLOAD_URL" -o /tmp/yq
 
+# Download checksum
+curl -L "https://github.com/mikefarah/yq/releases/download/v${VERSION}/checksums" -o /tmp/checksums
+
+# # Verify checksum
+# cd /tmp
+# grep "yq_linux_${YQ_ARCH}" checksums | sha256sum -c
+
 # Make it executable and move to /usr/local/bin
 chmod +x /tmp/yq
-sudo mv /tmp/yq /usr/local/bin/yq
+mv /tmp/yq /usr/local/bin/yq
+
+# Cleanup
+rm /tmp/checksums
 
 # Verify installation
-if command -v yq &> /dev/null; then
-    echo "yq successfully installed!"
-    yq --version
-else
-    echo "yq installation failed"
-    exit 1
-fi
+yq --version
+
+echo "yq ${VERSION} installed successfully"

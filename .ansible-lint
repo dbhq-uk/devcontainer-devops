@@ -1,0 +1,37 @@
+---
+# Ansible-lint configuration
+# https://ansible-lint.readthedocs.io/
+
+profile: production
+
+exclude_paths:
+  - .cache/
+  - .github/
+  - .terraform/
+  - test/
+
+skip_list:
+  - yaml[line-length]  # Allow longer lines in YAML
+  - name[casing]       # Don't enforce task naming
+
+warn_list:
+  - experimental
+  - ignore-errors
+  - no-handler
+  - unnamed-task
+
+# Enable specific rules
+enable_list:
+  - args
+  - empty-string-compare
+  - no-log-password
+  - no-same-owner
+
+# Offline mode (no internet required)
+offline: false
+
+# Use default rules
+use_default_rules: true
+
+# Verbosity
+verbosity: 1

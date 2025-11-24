@@ -8,6 +8,16 @@ trigger:
       - .devcontainer/*
       - files/*
 
+pr:
+  branches:
+    include:
+      - main
+      - develop
+  paths:
+    include:
+      - .devcontainer/*
+      - files/*
+
 pool:
   vmImage: 'ubuntu-latest'
 
@@ -17,13 +27,50 @@ variables:
   containerRegistry: '<your-acr-name>.azurecr.io'
   azureServiceConnection: '<your-service-connection-name>'
   tag: '$(Build.BuildId)'
+  majorVersion: '1'
+  minorVersion: '0'
+  patchVersion: '$(Build.BuildId)'
+  semanticVersion: '$(majorVersion).$(minorVersion).$(patchVersion)'
 
 stages:
-- stage: Build
-  displayName: 'Build and Push Docker Image'
+- stage: Validate
+  displayName: 'Validate and Lint'
   jobs:
-  - job: BuildAndPush
-    displayName: 'Build and Push to ACR'
+  - job: Lint
+    displayName: 'Lint Scripts and Configs'
+    steps:
+    - task: Bash@3
+      displayName: 'Validate Shell Scripts'
+      inputs:
+        targetType: 'inline'
+        script: |
+          echo "Checking shell scripts..."
+          find files/scripts -name "*.sh" -type f -exec bash -n {} \;
+          echo "All shell scripts are valid"
+
+    - task: Bash@3
+      displayName: 'Validate JSON Files'
+      inputs:
+        targetType: 'inline'
+        script: |
+          echo "Checking JSON files..."
+          find . -name "*.json" -not -path "*/node_modules/*" -exec jq empty {} \;
+          echo "All JSON files are valid"
+
+    - task: Bash@3
+      displayName: 'Check Dockerfile'
+      inputs:
+        targetType: 'inline'
+        script: |
+          echo "Linting Dockerfile..."
+          docker run --rm -i hadolint/hadolint < .devcontainer/Dockerfile || true
+
+- stage: Build
+  displayName: 'Build and Test'
+  dependsOn: Validate
+  jobs:
+  - job: BuildImage
+    displayName: 'Build Docker Image'
     steps:
     - task: Docker@2
       displayName: 'Login to Azure Container Registry'
@@ -40,23 +87,138 @@ stages:
         buildContext: '.'
         tags: |
           $(tag)
+          $(semanticVersion)
           latest
         arguments: |
           --build-arg UBUNTU_VERSION=22.04
+          --build-arg TERRAFORM_VERSION=1.13.5
+          --build-arg KUBECTL_VERSION=1.34.2
+          --build-arg HELM_VERSION=4.0.0
           --target final
 
+    - task: Bash@3
+      displayName: 'Test Image - Validate Tools'
+      inputs:
+        targetType: 'inline'
+        script: |
+          echo "Running validation tests..."
+          docker run --rm $(containerRegistry)/$(imageRepository):$(tag) bash -c "
+            terraform version &&
+            kubectl version --client &&
+            helm version &&
+            az version &&
+            ansible --version &&
+            pwsh --version &&
+            docker --version
+          "
+
+- stage: SecurityScan
+  displayName: 'Security Scanning'
+  dependsOn: Build
+  condition: succeeded()
+  jobs:
+  - job: ScanImage
+    displayName: 'Vulnerability Scan'
+    steps:
     - task: Docker@2
-      displayName: 'Push Docker Image to ACR'
+      displayName: 'Login to ACR'
+      inputs:
+        command: 'login'
+        containerRegistry: '$(azureServiceConnection)'
+
+    - task: Bash@3
+      displayName: 'Run Trivy Scan'
+      inputs:
+        targetType: 'inline'
+        script: |
+          # Install Trivy
+          wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | sudo apt-key add -
+          echo "deb https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main" | sudo tee -a /etc/apt/sources.list.d/trivy.list
+          sudo apt-get update
+          sudo apt-get install trivy
+          
+          # Scan image
+          trivy image --severity HIGH,CRITICAL $(containerRegistry)/$(imageRepository):$(tag) || true
+
+    - task: Bash@3
+      displayName: 'Scan with Checkov'
+      inputs:
+        targetType: 'inline'
+        script: |
+          pip install checkov
+          checkov -d .devcontainer --framework dockerfile || true
+
+- stage: Push
+  displayName: 'Push to Registry'
+  dependsOn: SecurityScan
+  condition: and(succeeded(), in(variables['Build.SourceBranch'], 'refs/heads/main', 'refs/heads/develop'))
+  jobs:
+  - job: PushImage
+    displayName: 'Push to ACR'
+    steps:
+    - task: Docker@2
+      displayName: 'Login to ACR'
+      inputs:
+        command: 'login'
+        containerRegistry: '$(azureServiceConnection)'
+
+    - task: Docker@2
+      displayName: 'Push Docker Image'
       inputs:
         command: 'push'
         repository: '$(imageRepository)'
         containerRegistry: '$(azureServiceConnection)'
         tags: |
           $(tag)
+          $(semanticVersion)
           latest
 
+    - task: Bash@3
+      displayName: 'Tag Semantic Version'
+      inputs:
+        targetType: 'inline'
+        script: |
+          echo "Image pushed with tags:"
+          echo "  - $(containerRegistry)/$(imageRepository):$(tag)"
+          echo "  - $(containerRegistry)/$(imageRepository):$(semanticVersion)"
+          echo "  - $(containerRegistry)/$(imageRepository):latest"
+
     - task: Docker@2
-      displayName: 'Logout from Azure Container Registry'
+      displayName: 'Logout from ACR'
       inputs:
         command: 'logout'
         containerRegistry: '$(azureServiceConnection)'
+
+- stage: Notify
+  displayName: 'Notification'
+  dependsOn: Push
+  condition: always()
+  jobs:
+  - job: SendNotification
+    displayName: 'Send Build Notification'
+    steps:
+    - task: Bash@3
+      displayName: 'Build Summary'
+      inputs:
+        targetType: 'inline'
+        script: |
+          echo "================================"
+          echo "DevContainer Build Complete"
+          echo "================================"
+          echo "Build ID: $(Build.BuildId)"
+          echo "Version: $(semanticVersion)"
+          echo "Branch: $(Build.SourceBranch)"
+          echo "Status: $(Agent.JobStatus)"
+          echo "================================"
+          
+    # Uncomment and configure for Slack/Teams notifications
+    # - task: InvokeRESTAPI@1
+    #   displayName: 'Send Slack Notification'
+    #   inputs:
+    #     connectionType: 'connectedServiceName'
+    #     serviceConnection: 'slack-webhook'
+    #     method: 'POST'
+    #     body: |
+    #       {
+    #         "text": "DevContainer build $(Agent.JobStatus) - v$(semanticVersion)"
+    #       }

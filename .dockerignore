@@ -1,0 +1,83 @@
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# CI/CD
+.github/
+.azuredevops/
+azure-pipelines.yml
+.gitlab-ci.yml
+
+# Documentation
+README.md
+CONTRIBUTING.md
+CHANGELOG.md
+LICENSE
+*.md
+docs/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Terraform state
+.terraform/
+.terraform.lock.hcl
+*.tfstate
+*.tfstate.*
+*.tfvars
+.terragrunt-cache/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+venv/
+ENV/
+env/
+.venv
+*.egg-info/
+dist/
+build/
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.bak
+*.backup
+
+# Secrets
+secrets/
+*.pem
+*.key
+*.crt
+.env
+.env.*
+*.env
+
+# Test files
+tests/
+test/
+*_test.go
+*.test
+coverage/
+
+# Build artifacts
+target/
+out/
+bin/
+obj/

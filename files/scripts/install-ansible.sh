@@ -12,3 +12,5 @@ add-apt-repository --yes --update ppa:ansible/ansible
 
 # Install Ansible
 apt-get install -y ansible
+
+echo "Ansible ${VERSION} installed successfully"

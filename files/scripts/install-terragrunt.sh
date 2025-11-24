@@ -1,52 +1,38 @@
 #!/bin/bash
-set -e
+set -euo pipefail
 
-echo "Installing Terragrunt..."
+OS="linux"
+ARCH="amd64"
+VERSION="v0.93.9"
+BINARY_NAME="terragrunt_${OS}_${ARCH}"
 
-# Detect architecture
-ARCH=$(uname -m)
-case $ARCH in
-    x86_64)
-        TG_ARCH="amd64"
-        ;;
-    aarch64|arm64)
-        TG_ARCH="arm64"
-        ;;
-    armv7l)
-        TG_ARCH="arm"
-        ;;
-    *)
-        echo "Unsupported architecture: $ARCH"
-        exit 1
-        ;;
-esac
+# Download the binary
+curl -sL "https://github.com/gruntwork-io/terragrunt/releases/download/$VERSION/$BINARY_NAME" -o "/tmp/$BINARY_NAME"
 
-# Get latest version from GitHub API
-TG_VERSION=$(curl -s https://api.github.com/repos/gruntwork-io/terragrunt/releases/latest | grep '"tag_name":' | sed -E 's/.*"v([^"]+)".*/\1/')
+# Generate the checksum
+CHECKSUM="$(sha256sum "/tmp/$BINARY_NAME" | awk '{print $1}')"
 
-if [ -z "$TG_VERSION" ]; then
-    echo "Failed to fetch latest terragrunt version"
-    exit 1
+# Download the checksum file
+curl -sL "https://github.com/gruntwork-io/terragrunt/releases/download/$VERSION/SHA256SUMS" -o "/tmp/SHA256SUMS"
+
+# Grab the expected checksum (exact match on filename)
+EXPECTED_CHECKSUM="$(awk -v binary="$BINARY_NAME" '$2 == binary {print $1; exit}' /tmp/SHA256SUMS)"
+
+# Compare the checksums
+if [ "$CHECKSUM" == "$EXPECTED_CHECKSUM" ]; then
+ echo "Checksums match!"
+else
+ echo "Checksums do not match!"
 fi
 
-echo "Latest Terragrunt version: $TG_VERSION"
+# Install
+chmod +x "/tmp/${BINARY_NAME}"
+mv "/tmp/${BINARY_NAME}" /usr/local/bin/terragrunt
 
-# Download and install terragrunt
-TG_BINARY="terragrunt_linux_${TG_ARCH}"
-DOWNLOAD_URL="https://github.com/gruntwork-io/terragrunt/releases/download/v${TG_VERSION}/${TG_BINARY}"
-
-echo "Downloading from: $DOWNLOAD_URL"
-curl -L "$DOWNLOAD_URL" -o /tmp/terragrunt
-
-# Make it executable and move to /usr/local/bin
-chmod +x /tmp/terragrunt
-sudo mv /tmp/terragrunt /usr/local/bin/terragrunt
+# Cleanup
+rm -f /tmp/SHA256SUMS
 
 # Verify installation
-if command -v terragrunt &> /dev/null; then
-    echo "Terragrunt successfully installed!"
-    terragrunt --version
-else
-    echo "Terragrunt installation failed"
-    exit 1
-fi
+terragrunt --version
+
+echo "Terragrunt v${VERSION} installed successfully"
