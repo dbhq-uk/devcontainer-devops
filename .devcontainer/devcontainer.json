@@ -15,11 +15,13 @@
     },
     "remoteUser": "vscode",
     "mounts": [
-        "source=${localWorkspaceFolder},target=/workspace/devcontainer,type=bind,consistency=cached"
+        "source=${localWorkspaceFolder},target=/workspace/devcontainer,type=bind,consistency=cached",
+        "type=volume,source=dev-home,target=/home/vscode"
     ],
-    "workspaceMount": "source=dev-volume,target=/workspace",
+    "workspaceMount": "source=dev-workspace,target=/workspace,type=volume",
     "workspaceFolder": "/workspace",
-    "postCreateCommand": "sudo chown -R vscode:vscode /workspace",
+    "postCreateCommand": "sudo chown -R vscode:vscode /workspace && sudo chown -R vscode:vscode /home/vscode",
+    "postStartCommand": "sudo /usr/local/bin/entrypoint.sh",
     
     "customizations": {
         "vscode": {

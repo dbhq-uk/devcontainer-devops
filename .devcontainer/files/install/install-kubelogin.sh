@@ -21,7 +21,7 @@ chmod +x bin/linux_amd64/kubelogin
 mv bin/linux_amd64/kubelogin /usr/local/bin/
 
 # Cleanup
-rm -rf bin kubelogin-linux-amd64.zip
+#rm -rf bin kubelogin-linux-amd64.zip
 
 # Verify installation
 kubelogin --version
