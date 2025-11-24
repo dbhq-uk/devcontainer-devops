@@ -40,9 +40,10 @@
 │  │  ┌──────────────────────────────────────────────────────┐│ │
 │  │  │                  File System                        ││ │
 │  │  │                                                     ││ │
-│  │  │  /workspace (Volume)  ← Persistent Storage        ││ │
-│  │  │  /home/vscode         ← User Home Directory       ││ │
-│  │  │  /tmp/scripts         ← Installation Scripts      ││ │
+│  │  │  /workspace (Volume)      ← Persistent Storage    ││ │
+│  │  │  /home/vscode (Volume)    ← User Home (Persistent)││ │
+│  │  │  /tmp/install-<tool>      ← Installation temp dirs││ │
+│  │  │  /tmp-home                ← Default home template ││ │
 │  │  └──────────────────────────────────────────────────────┘│ │
 │  └────────────────────────────────────────────────────────────┘ │
 └─────────────────────────────────────────────────────────────────┘

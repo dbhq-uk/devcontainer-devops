@@ -6,12 +6,13 @@ A comprehensive development container for DevOps and Infrastructure-as-Code work
 
 This devcontainer includes pre-configured tools for:
 
-- **Infrastructure as Code**: Terraform, Terragrunt
+- **Infrastructure as Code**: Terraform, Terragrunt, tflint, checkov
 - **Cloud Management**: Azure CLI (az)
-- **Container Operations**: Docker Engine, Helm, kubectl
-- **Configuration Management**: Ansible
-- **Scripting & Automation**: PowerShell 7.5.4, Python with DevOps tools
-- **Development Utilities**: Custom bash aliases and configuration
+- **Container Operations**: Docker Engine, Helm, kubectl, kubelogin
+- **Configuration Management**: Ansible with 9 popular collections
+- **Scripting & Automation**: PowerShell 7 with modules, Python with DevOps tools, ZSH with Oh My Zsh
+- **Development Utilities**: Custom bash/zsh aliases, shell completions, git-crypt, pre-commit
+- **Data Processing**: jq, yq
 
 ## 📋 Included Tools
 
@@ -33,22 +34,45 @@ This devcontainer includes pre-configured tools for:
 devcontainer/
 ├── .devcontainer/
 │   ├── Dockerfile              # Multi-stage container build
-│   └── devcontainer.json       # VS Code devcontainer configuration
-├── files/
-│   ├── scripts/                # Installation scripts for tools
-│   │   ├── install-ansible.sh
-│   │   ├── install-azure-cli.sh
-│   │   ├── install-docker.sh
-│   │   ├── install-helm.sh
-│   │   ├── install-powershell.sh
-│   │   ├── install-python-tools.sh
-│   │   ├── install-terraform.sh
-│   │   ├── install-terragrunt.sh
-│   │   └── install-yq.sh
-│   ├── .bashrc                 # Custom bash configuration
-│   └── .bash_aliases           # Convenience aliases
+│   ├── devcontainer.json       # VS Code devcontainer configuration
+│   └── files/
+│       ├── install/            # Installation scripts (each uses /tmp/install-<tool>)
+│       │   ├── install-ansible.sh
+│       │   ├── install-azure-cli.sh
+│       │   ├── install-checkov.sh
+│       │   ├── install-docker.sh
+│       │   ├── install-git-crypt.sh
+│       │   ├── install-helm.sh
+│       │   ├── install-jq.sh
+│       │   ├── install-kubelogin.sh
+│       │   ├── install-kubectl.sh
+│       │   ├── install-powershell.sh
+│       │   ├── install-pre-commit.sh
+│       │   ├── install-python-tools.sh
+│       │   ├── install-terraform.sh
+│       │   ├── install-terragrunt.sh
+│       │   ├── install-tflint.sh
+│       │   ├── install-yq.sh
+│       │   └── install-zsh.sh
+│       ├── home/               # Home directory files
+│       │   ├── .bash_aliases   # Convenience aliases
+│       │   ├── .environment    # Shell-aware environment config
+│       │   └── .zshrc          # ZSH configuration
+│       └── entrypoint.sh       # Container entrypoint for home dir init
+├── tests/
+│   ├── integration-test.sh     # Integration tests
+│   ├── run-all-tests.sh        # Test runner
+│   └── validate-tools.sh       # Tool validation
+├── scripts/
+│   └── check-latest-versions.sh
 ├── azure-pipelines.yml         # CI/CD pipeline for ACR
-└── README.md                   # This file
+├── ARCHITECTURE.md             # System architecture documentation
+├── CHANGELOG.md                # Version history
+├── CONTRIBUTING.md             # Contribution guidelines
+├── QUICKSTART.md               # Quick start guide
+├── README.md                   # This file
+├── SECURITY.md                 # Security policies
+└── VERSION_MANAGEMENT.md       # Version management guide
 ```
 
 ## 🔧 Getting Started
@@ -82,13 +106,15 @@ devcontainer/
 
 ## 💾 Storage Configuration
 
-The devcontainer uses a Docker volume for persistent workspace storage:
+The devcontainer uses Docker volumes for persistent storage:
 
-- **Volume**: `dev-volume`
-- **Mount Point**: `/workspace`
-- **Permissions**: Automatically configured for the `vscode` user via `postCreateCommand`
+- **Workspace Volume**: `dev-workspace` mounted at `/workspace`
+- **Home Volume**: `dev-home` mounted at `/home/vscode`
+- **Bind Mount**: Local `.devcontainer` directory mounted at `/workspace/devcontainer`
+- **Permissions**: Automatically configured via `postCreateCommand`
+- **Home Init**: Entrypoint script copies default configs on first run
 
-This ensures your work persists across container rebuilds.
+This ensures your work and settings persist across container rebuilds.
 
 ## 🔄 CI/CD Pipeline
 
