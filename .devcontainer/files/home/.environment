@@ -1,8 +1,8 @@
 # Environment variables for DevContainer
 
 # Default editor
-export EDITOR=vim
-export VISUAL=vim
+export EDITOR=nano
+export VISUAL=nano
 
 # Terraform settings
 export TF_PLUGIN_CACHE_DIR="$HOME/.terraform.d/plugin-cache"
@@ -40,20 +40,33 @@ export HISTTIMEFORMAT="%Y-%m-%d %H:%M:%S "
 # Colors for ls
 export LS_COLORS='di=34:ln=35:so=32:pi=33:ex=31:bd=34;46:cd=34;43:su=30;41:sg=30;46:tw=30;42:ow=30;43'
 
-# Enable kubectl bash completion
-source <(kubectl completion bash)
-complete -F __start_kubectl k
-
-# Enable helm bash completion
-source <(helm completion bash)
-complete -F __start_helm h
-
-# Enable terraform bash completion
-complete -C /usr/local/bin/terraform terraform
-complete -C /usr/local/bin/terraform tf
-
-# Enable az bash completion
-source /etc/bash_completion.d/azure-cli 2>/dev/null || true
+# Shell-specific completions
+if [ -n "$BASH_VERSION" ]; then
+    # Bash completions
+    source <(kubectl completion bash)
+    complete -F __start_kubectl k
+    
+    source <(helm completion bash)
+    complete -F __start_helm h
+    
+    complete -C /usr/local/bin/terraform terraform
+    complete -C /usr/local/bin/terraform tf
+    
+    source /etc/bash_completion.d/azure-cli 2>/dev/null || true
+elif [ -n "$ZSH_VERSION" ]; then
+    # Zsh completions
+    autoload -Uz compinit
+    compinit
+    
+    source <(kubectl completion zsh)
+    compdef __start_kubectl k
+    
+    source <(helm completion zsh)
+    compdef __start_helm h
+    
+    complete -o nospace -C /usr/local/bin/terraform terraform
+    complete -o nospace -C /usr/local/bin/terraform tf
+fi
 
 # Ansible settings
 export ANSIBLE_NOCOWS=1
@@ -63,12 +76,8 @@ export ANSIBLE_HOST_KEY_CHECKING=False
 export PATH="$HOME/.local/bin:$PATH"
 
 # Git configuration helpers
-git config --global core.editor vim
+git config --global core.editor nano
 git config --global pull.rebase false
 git config --global init.defaultBranch main
 git config --global color.ui auto
 
-# Welcome message
-echo "🚀 DevOps DevContainer Ready!"
-echo "Run 'validate' to check all tools"
-echo "Run 'testall' to run integration tests"
