@@ -11,8 +11,8 @@ export TF_CLI_ARGS_apply="-auto-approve=false"
 export TF_CLI_ARGS_destroy="-auto-approve=false"
 
 # Terragrunt settings
-export TERRAGRUNT_DOWNLOAD="$HOME/.terragrunt-cache"
-mkdir -p $TERRAGRUNT_DOWNLOAD
+export TG_DOWNLOAD_DIR="$HOME/.terragrunt-cache"
+mkdir -p $TG_DOWNLOAD_DIR
 
 # Azure CLI settings
 export AZURE_CORE_OUTPUT=table
