@@ -42,6 +42,7 @@ ARG PKGS="\
     unzip \
     jq \
     ca-certificates \
+    iputils-ping \
     "
 
 RUN apt-get update && \

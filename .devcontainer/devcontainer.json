@@ -14,6 +14,7 @@
         }
     },
     "remoteUser": "vscode",
+    "runArgs": ["--network=host"],
     "mounts": [
         "source=${localWorkspaceFolder},target=/workspace/devcontainer,type=bind,consistency=cached",
         "type=volume,source=dev-home,target=/home/vscode"
