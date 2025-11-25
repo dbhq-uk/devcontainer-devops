@@ -45,7 +45,7 @@ steps:
     inputs:
       repository: "your-registry.azurecr.io/example/devcontainer"
       command: "build"
-      Dockerfile: "**/Dockerfile"
+      Dockerfile: ".devcontainer/Dockerfile"
       arguments: "--no-cache"
       tags: |
         latest
