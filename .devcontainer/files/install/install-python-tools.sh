@@ -24,11 +24,11 @@ python3 -m pip install \
     resolvelib
 
 # Configure pip to default to user installs for non-root users
-mkdir -p /etc/pip
-cat > /etc/pip/pip.conf << 'EOF'
-[install]
-user = true
-EOF
+# mkdir -p /etc/pip
+# cat > /etc/pip/pip.conf << 'EOF'
+# [install]
+# user = true
+# EOF
 
 # Validation
 python3 --version
