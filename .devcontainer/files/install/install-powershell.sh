@@ -41,4 +41,6 @@ for MODULE in ${MODULES}; do
     pwsh -NoProfile -NonInteractive -Command "if (-not (Get-Module -ListAvailable -Name '${MODULE}')) { Install-Module -Name '${MODULE}' -Scope AllUsers -Repository PSGallery -Force -AllowClobber }"
 done
 
+curl -s https://ohmyposh.dev/install.sh | bash -s
+
 echo "PowerShell modules installed successfully"
