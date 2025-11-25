@@ -3,6 +3,14 @@ trigger:
     include:
       - master
 
+schedules:
+  - cron: 0 0 * * *
+    displayName: Nightly Scan
+    branches:
+      include: ["master"]
+    always: true # whether to always run the pipeline or only if there have been source code changes since the last successful scheduled run. The default is false.
+    batch: true
+    
 pool:
   name: your-agent-pool
 
