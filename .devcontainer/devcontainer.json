@@ -27,7 +27,7 @@
     ],
     "workspaceMount": "source=dev-workspace,target=/workspace,type=volume",
     "workspaceFolder": "/workspace",
-    "postCreateCommand": "sudo chown -R vscode:vscode /workspace && sudo chown -R vscode:vscode /home/vscode",
+    "postCreateCommand": "sudo bash -c 'echo \"127.0.0.1 $(hostname)\" >> /etc/hosts' && sudo chown -R vscode:vscode /workspace && sudo chown -R vscode:vscode /home/vscode",
     "postStartCommand": "sudo /usr/local/bin/entrypoint.sh",
     
     "customizations": {
