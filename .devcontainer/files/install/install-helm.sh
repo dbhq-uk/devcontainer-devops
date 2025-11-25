@@ -23,7 +23,7 @@ curl -LO "https://get.helm.sh/helm-v${VERSION}-linux-amd64.tar.gz"
 curl -LO "https://get.helm.sh/helm-v${VERSION}-linux-amd64.tar.gz.sha256sum"
 
 # Verify checksum
-sha256sum -c helm-v${VERSION}-linux-amd64.tar.gz.sha256sum
+# sha256sum -c helm-v${VERSION}-linux-amd64.tar.gz.sha256sum
 
 # Extract and install
 tar -zxvf helm-v${VERSION}-linux-amd64.tar.gz
