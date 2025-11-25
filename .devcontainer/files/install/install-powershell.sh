@@ -34,7 +34,7 @@ pwsh -NoProfile -NonInteractive -Command "Set-PSRepository -Name 'PSGallery' -In
 
 # Install common PowerShell modules
 echo "Installing PowerShell modules..."
-MODULES="Az Pester PSScriptAnalyzer powershell-yaml ImportExcel"
+MODULES="Az Pester PSScriptAnalyzer powershell-yaml ImportExcel posh-git z PSFzf Terminal-Icons"
 
 for MODULE in ${MODULES}; do
     echo "Installing module: ${MODULE}"

@@ -59,10 +59,13 @@
                         "icon": "terminal-bash"
                     },
                     "pwsh": {
-                        "path": "/usr/local/bin/pwsh",
+                        "path": "/usr/bin/pwsh",
                         "icon": "terminal-powershell"
                     }
                 },
+                "powershell.integratedConsole.suppressStartupBanner": false,
+                "powershell.integratedConsole.startInBackground": false,
+                "powershell.promptToUpdatePowerShell": false,
                 "files.eol": "\n",
                 "editor.formatOnSave": true,
                 "editor.formatOnPaste": false,
