@@ -92,7 +92,7 @@ COPY ./files/home/ps_theme.json /tmp-home/.config/powershell/ps_theme.json
 # Source environment in bashrc
 RUN echo '' >> /tmp-home/.bashrc && \
     echo '# Load DevContainer environment' >> /tmp-home/.bashrc && \
-    echo 'if [ -f ~/.environment ]; then' >> //tmp-home/.bashrc && \
+    echo 'if [ -f ~/.environment ]; then' >> /tmp-home/.bashrc && \
     echo '    source ~/.environment' >> /tmp-home/.bashrc && \
     echo 'fi' >> /tmp-home/.bashrc
 
