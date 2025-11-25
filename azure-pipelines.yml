@@ -17,6 +17,9 @@ variables:
   semanticVersion: '$(majorVersion).$(minorVersion).$(patchVersion)'
 
 steps:
+  - checkout: self
+    persistCredentials: true
+    
   - task: Bash@3
     displayName: Clean docker cache
     inputs:
