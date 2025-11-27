@@ -1,23 +1,23 @@
 {
     // Option 1: Use pre-built image from Azure Container Registry
     // Requires: az acr login --name your-registry
-    "image": "your-registry.azurecr.io/example/devcontainer:latest",
+    //"image": "your-registry.azurecr.io/example/devcontainer:latest",
     
     // Option 2: Build from local Dockerfile
     // Uncomment the section below and comment out "image" above to build locally
-    // "build": {
-    //     "dockerfile": "Dockerfile",
-    //     "context": "",
-    //     "target": "final",
-    //     "args": {
-    //         "UBUNTU_VERSION": "22.04"
-    //         // Leave versions empty to install latest automatically
-    //         // Or specify versions to pin, e.g.:
-    //         // "TERRAFORM_VERSION": "1.13.5",
-    //         // "KUBECTL_VERSION": "1.34.2",
-    //         // "HELM_VERSION": "4.0.0"
-    //     }
-    // },
+    "build": {
+        "dockerfile": "Dockerfile",
+        "context": "",
+        "target": "final",
+        "args": {
+            "UBUNTU_VERSION": "22.04"
+            // Leave versions empty to install latest automatically
+            // Or specify versions to pin, e.g.:
+            // "TERRAFORM_VERSION": "1.13.5",
+            // "KUBECTL_VERSION": "1.34.2",
+            // "HELM_VERSION": "4.0.0"
+        }
+    },
     
     "remoteUser": "vscode",
     "runArgs": ["--network=host"],
