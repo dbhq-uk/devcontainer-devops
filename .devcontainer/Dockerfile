@@ -42,10 +42,12 @@ ARG PKGS="\
 # Allow system-wide pip installs (PEP 668 on Ubuntu 24.04+)
 # Safe in a devcontainer where system Python is the intended target
 ENV PIP_BREAK_SYSTEM_PACKAGES=1
+ENV PIP_ROOT_USER_ACTION=ignore
 
+# NOTE: apt-get upgrade removed to improve layer cacheability.
+# The base image is maintained upstream; weekly scheduled builds (--no-cache) pick up updates.
 RUN apt-get update && \
     apt-get install --no-install-recommends -y ${PKGS} && \
-    apt-get upgrade -y && \
     apt-get autoremove --purge -y && \
     rm -rf /var/lib/apt/lists/*
 
@@ -80,11 +82,7 @@ RUN /tmp/install/install-yq.sh ${YQ_VERSION} && \
 RUN chsh -s /bin/zsh ${USERNAME} && \
     cp -r /home/vscode/. /tmp-home
 
-COPY ./files/home/.bash_aliases /tmp-home/.bash_aliases
-COPY ./files/home/.environment /tmp-home/.environment
-COPY ./files/home/.zshrc /tmp-home/.zshrc
-COPY ./files/home/Microsoft.PowerShell_profile.ps1 /tmp-home/.config/powershell/Microsoft.PowerShell_profile.ps1
-COPY ./files/home/ps_theme.json /tmp-home/.config/powershell/ps_theme.json
+COPY ./files/home/ /tmp-home/
 COPY ./files/entrypoint.sh /usr/local/bin/entrypoint.sh
 
 # Source environment in bashrc, install zsh plugins, and cleanup
@@ -93,8 +91,8 @@ RUN echo '' >> /tmp-home/.bashrc && \
     echo 'if [ -f ~/.environment ]; then' >> /tmp-home/.bashrc && \
     echo '    source ~/.environment' >> /tmp-home/.bashrc && \
     echo 'fi' >> /tmp-home/.bashrc && \
-    git clone --branch v0.7.1 --depth 1 https://github.com/zsh-users/zsh-autosuggestions /tmp-home/.oh-my-zsh/custom/plugins/zsh-autosuggestions && \
-    git clone --branch 0.8.0 --depth 1 https://github.com/zsh-users/zsh-syntax-highlighting.git /tmp-home/.oh-my-zsh/custom/plugins/zsh-syntax-highlighting && \
+    git -c advice.detachedHead=false clone --branch v0.7.1 --depth 1 https://github.com/zsh-users/zsh-autosuggestions /tmp-home/.oh-my-zsh/custom/plugins/zsh-autosuggestions && \
+    git -c advice.detachedHead=false clone --branch 0.8.0 --depth 1 https://github.com/zsh-users/zsh-syntax-highlighting.git /tmp-home/.oh-my-zsh/custom/plugins/zsh-syntax-highlighting && \
     rm -rf /tmp/install-* /tmp/install /var/lib/apt/lists/*
 
 HEALTHCHECK --interval=60s --timeout=10s --retries=3 \

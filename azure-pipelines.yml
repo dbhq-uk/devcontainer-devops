@@ -26,9 +26,9 @@ variables:
   semanticVersion: '$(majorVersion).$(minorVersion).$(patchVersion)'
   # Use --no-cache on scheduled builds to pick up upstream updates
   ${{ if eq(variables['Build.Reason'], 'Schedule') }}:
-    buildArgs: '--no-cache'
+    buildArgs: '--no-cache --build-arg BUILDKIT_INLINE_CACHE=1'
   ${{ else }}:
-    buildArgs: '--cache-from $(containerRegistry)/$(imageRepository):latest'
+    buildArgs: '--build-arg BUILDKIT_INLINE_CACHE=1 --cache-from $(containerRegistry)/$(imageRepository):latest'
 
 stages:
 - stage: Validate

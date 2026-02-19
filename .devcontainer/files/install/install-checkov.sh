@@ -13,7 +13,11 @@ fi
 echo "Installing checkov version ${VERSION}..."
 
 # Install checkov using pip
-python3 -m pip install checkov==${VERSION}
+python3 -m pip install --no-cache-dir checkov==${VERSION}
+
+# Fix dependency conflict: checkov can pull an old packaging version
+# that conflicts with wheel's requirements (packaging>=24.0)
+python3 -m pip install --no-cache-dir "packaging>=24.0"
 
 # Verify installation
 checkov --version

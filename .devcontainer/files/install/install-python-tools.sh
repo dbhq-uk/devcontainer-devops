@@ -13,6 +13,7 @@ apt-get install -y --no-install-recommends \
     libffi-dev \
     libssl-dev \
     build-essential
+rm -rf /var/lib/apt/lists/*
 
 # Upgrade pip tools (use --ignore-installed to skip uninstall of apt-managed packages on Ubuntu 24.04+)
 python3 -m pip install --no-cache-dir --ignore-installed pip setuptools wheel

@@ -7,12 +7,6 @@ cd "${WORKDIR}"
 
 # Install PowerShell on Ubuntu
 
-# Update package list
-apt-get update
-
-# Install dependencies
-apt-get install -y wget apt-transport-https software-properties-common
-
 # Get Ubuntu version dynamically
 . /etc/os-release
 
@@ -26,20 +20,22 @@ dpkg -i packages-microsoft-prod.deb
 apt-get update
 
 # Install PowerShell
-apt-get install -y powershell
+apt-get install -y --no-install-recommends powershell
+rm -rf /var/lib/apt/lists/*
 
 # Configure PSGallery as trusted repository
 echo "Configuring PSGallery..."
 pwsh -NoProfile -NonInteractive -Command "Set-PSRepository -Name 'PSGallery' -InstallationPolicy 'Trusted'"
 
-# Install common PowerShell modules
+# Install common PowerShell modules in a single pwsh invocation
 echo "Installing PowerShell modules..."
-MODULES="Az Pester PSScriptAnalyzer powershell-yaml ImportExcel posh-git z PSFzf Terminal-Icons"
-
-for MODULE in ${MODULES}; do
-    echo "Installing module: ${MODULE}"
-    pwsh -NoProfile -NonInteractive -Command "if (-not (Get-Module -ListAvailable -Name '${MODULE}')) { Install-Module -Name '${MODULE}' -Scope AllUsers -Repository PSGallery -Force -AllowClobber }"
-done
+pwsh -NoProfile -NonInteractive -Command "
+    \$modules = @('Az','Pester','PSScriptAnalyzer','powershell-yaml','ImportExcel','posh-git','z','PSFzf','Terminal-Icons')
+    foreach (\$m in \$modules) {
+        Write-Host \"Installing module: \$m\"
+        Install-Module -Name \$m -Scope AllUsers -Repository PSGallery -Force -AllowClobber
+    }
+"
 
 # Install oh-my-posh (download then execute, not piped)
 curl -sSLo /tmp/install-ohmyposh.sh https://ohmyposh.dev/install.sh
