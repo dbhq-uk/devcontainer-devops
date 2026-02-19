@@ -8,7 +8,11 @@ cd "${WORKDIR}"
 # Get latest version if not specified
 if [ -z "${1:-}" ]; then
     echo "Fetching latest kubelogin version..."
-    VERSION=$(curl -s https://api.github.com/repos/Azure/kubelogin/releases/latest | grep '"tag_name":' | sed -E 's/.*"v([^"]+)".*/\1/')
+    VERSION=$(curl -sI https://github.com/Azure/kubelogin/releases/latest | grep -i '^location:' | sed -E 's|.*/v([^[:space:]]+).*|\1|')
+    if [ -z "${VERSION}" ]; then
+        echo "ERROR: Failed to determine latest kubelogin version"
+        exit 1
+    fi
     echo "Latest version: ${VERSION}"
 else
     VERSION=$1

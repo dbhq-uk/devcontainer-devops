@@ -11,7 +11,11 @@ ARCH="amd64"
 # Use provided version or fetch latest from GitHub
 if [ -z "${1:-}" ]; then
     echo "Fetching latest Terragrunt version..."
-    VERSION=$(curl -s https://api.github.com/repos/gruntwork-io/terragrunt/releases/latest | grep '"tag_name":' | sed -E 's/.*"(v[^"]+)".*/\1/')
+    VERSION=$(curl -sI https://github.com/gruntwork-io/terragrunt/releases/latest | grep -i '^location:' | sed -E 's|.*(v[^[:space:]]+).*|\1|')
+    if [ -z "${VERSION}" ]; then
+        echo "ERROR: Failed to determine latest Terragrunt version"
+        exit 1
+    fi
     echo "Latest version: ${VERSION}"
 else
     VERSION="v${1}"

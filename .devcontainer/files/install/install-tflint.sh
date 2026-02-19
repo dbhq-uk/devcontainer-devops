@@ -8,7 +8,12 @@ cd "${WORKDIR}"
 # Get latest version if not specified
 if [ -z "${1:-}" ]; then
     echo "Fetching latest tflint version..."
-    VERSION=$(curl -s https://api.github.com/repos/terraform-linters/tflint/releases/latest | grep '"tag_name":' | sed -E 's/.*"v([^"]+)".*/\1/')
+    # Use redirect-based lookup to avoid GitHub API rate limits
+    VERSION=$(curl -sI https://github.com/terraform-linters/tflint/releases/latest | grep -i '^location:' | sed -E 's|.*/v([^[:space:]]+).*|\1|')
+    if [ -z "${VERSION}" ]; then
+        echo "ERROR: Failed to determine latest tflint version (possible rate limit)"
+        exit 1
+    fi
     echo "Latest version: ${VERSION}"
 else
     VERSION=$1
