@@ -14,8 +14,8 @@ apt-get install -y --no-install-recommends \
     libssl-dev \
     build-essential
 
-# Upgrade pip tools (use --force-reinstall to handle apt-managed pip on Ubuntu 24.04+)
-python3 -m pip install --no-cache-dir --force-reinstall pip setuptools wheel
+# Upgrade pip tools (use --ignore-installed to skip uninstall of apt-managed packages on Ubuntu 24.04+)
+python3 -m pip install --no-cache-dir --ignore-installed pip setuptools wheel
 
 # Install only essential system-wide packages that all users need
 python3 -m pip install \
