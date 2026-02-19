@@ -7,7 +7,16 @@ cd "${WORKDIR}"
 
 OS="linux"
 ARCH="amd64"
-VERSION="v0.93.9"
+
+# Use provided version or fetch latest from GitHub
+if [ -z "${1:-}" ]; then
+    echo "Fetching latest Terragrunt version..."
+    VERSION=$(curl -s https://api.github.com/repos/gruntwork-io/terragrunt/releases/latest | grep '"tag_name":' | sed -E 's/.*"(v[^"]+)".*/\1/')
+    echo "Latest version: ${VERSION}"
+else
+    VERSION="v${1}"
+fi
+
 BINARY_NAME="terragrunt_${OS}_${ARCH}"
 
 # Download the binary
@@ -24,9 +33,10 @@ EXPECTED_CHECKSUM="$(awk -v binary="$BINARY_NAME" '$2 == binary {print $1; exit}
 
 # Compare the checksums
 if [ "$CHECKSUM" == "$EXPECTED_CHECKSUM" ]; then
- echo "Checksums match!"
+    echo "Checksum verified successfully"
 else
- echo "Checksums do not match!"
+    echo "ERROR: Checksum mismatch! Expected: ${EXPECTED_CHECKSUM}, Got: ${CHECKSUM}"
+    exit 1
 fi
 
 # Install

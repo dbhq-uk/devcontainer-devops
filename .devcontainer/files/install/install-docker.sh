@@ -1,4 +1,6 @@
-#!/bin/sh
+#!/bin/bash
+set -euo pipefail
+
 # Install Docker Engine on Ubuntu
 
 # Add Docker's official GPG key

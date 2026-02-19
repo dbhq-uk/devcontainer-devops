@@ -1,8 +1,8 @@
 #!/bin/bash
-set -e
+set -euo pipefail
 
 # Get latest version if not specified
-if [ -z "$1" ]; then
+if [ -z "${1:-}" ]; then
     echo "Fetching latest checkov version..."
     VERSION=$(curl -s https://pypi.org/pypi/checkov/json | jq -r '.info.version')
     echo "Latest version: ${VERSION}"

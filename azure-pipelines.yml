@@ -5,255 +5,224 @@ trigger:
 
 schedules:
   - cron: 0 0 * * Sun
-    displayName: Nightly Scan
+    displayName: Weekly Rebuild
     branches:
       include: ["master"]
-    always: true # whether to always run the pipeline or only if there have been source code changes since the last successful scheduled run. The default is false.
+    always: true
     batch: true
-    
+
 pool:
   name: your-agent-pool
 
 variables:
   dockerfilePath: '.devcontainer/Dockerfile'
-  imageRepository: 'devcontainer'
+  imageRepository: 'example/devcontainer'
   containerRegistry: 'your-registry.azurecr.io'
+  containerRegistryConnection: 'your-registry'
   tag: '$(Build.BuildId)'
   majorVersion: '1'
   minorVersion: '0'
   patchVersion: '$(Build.BuildId)'
   semanticVersion: '$(majorVersion).$(minorVersion).$(patchVersion)'
+  # Use --no-cache on scheduled builds to pick up upstream updates
+  ${{ if eq(variables['Build.Reason'], 'Schedule') }}:
+    buildArgs: '--no-cache'
+  ${{ else }}:
+    buildArgs: '--cache-from $(containerRegistry)/$(imageRepository):latest'
 
-steps:
-  - checkout: self
-    persistCredentials: true
-    
-  - task: Bash@3
-    displayName: Clean docker cache
-    inputs:
-      targetType: "inline"
-      script: |
-        docker system prune -a -f
+stages:
+- stage: Validate
+  displayName: 'Validate and Lint'
+  jobs:
+  - job: Lint
+    displayName: 'Lint Scripts and Configs'
+    steps:
+    - checkout: self
 
-  - task: Docker@2
-    displayName: Build your-registry.azurecr.io/example/devcontainer:$(Build.BuildId)
+    - task: Bash@3
+      displayName: 'Syntax check shell scripts'
+      inputs:
+        targetType: 'inline'
+        script: |
+          echo "Checking shell scripts..."
+          errors=0
+          for script in .devcontainer/files/install/*.sh scripts/*.sh tests/*.sh; do
+            if [ -f "$script" ]; then
+              if ! bash -n "$script" 2>&1; then
+                echo "FAIL: $script"
+                errors=$((errors + 1))
+              else
+                echo "OK: $script"
+              fi
+            fi
+          done
+          if [ "$errors" -gt 0 ]; then
+            echo "$errors script(s) failed syntax check"
+            exit 1
+          fi
+          echo "All shell scripts are valid"
+
+    - task: Bash@3
+      displayName: 'Validate JSON files'
+      inputs:
+        targetType: 'inline'
+        script: |
+          echo "Checking JSON files..."
+          errors=0
+          for json in $(find . -name "*.json" -not -path "*/.git/*"); do
+            if ! python3 -m json.tool "$json" > /dev/null 2>&1; then
+              echo "FAIL: $json"
+              errors=$((errors + 1))
+            else
+              echo "OK: $json"
+            fi
+          done
+          if [ "$errors" -gt 0 ]; then
+            echo "$errors JSON file(s) are invalid"
+            exit 1
+          fi
+          echo "All JSON files are valid"
+
+    - task: Bash@3
+      displayName: 'Lint Dockerfile with Hadolint'
+      inputs:
+        targetType: 'inline'
+        script: |
+          echo "Linting Dockerfile..."
+          docker run --rm -i hadolint/hadolint hadolint \
+            --ignore DL3008 \
+            --ignore DL3009 \
+            --ignore DL3015 \
+            - < $(dockerfilePath)
+
+- stage: Build
+  displayName: 'Build and Test'
+  dependsOn: Validate
+  jobs:
+  - job: BuildImage
+    displayName: 'Build Docker Image'
     timeoutInMinutes: 120
-    inputs:
-      repository: "your-registry.azurecr.io/example/devcontainer"
-      command: "build"
-      Dockerfile: ".devcontainer/Dockerfile"
-      arguments: "--no-cache"
-      tags: |
-        latest
-        $(Build.BuildId)
+    steps:
+    - checkout: self
+      persistCredentials: true
 
+    - task: Bash@3
+      displayName: 'Clean docker cache'
+      inputs:
+        targetType: 'inline'
+        script: |
+          docker system prune -a -f
 
+    - task: Docker@2
+      displayName: 'Build image'
+      inputs:
+        containerRegistry: '$(containerRegistryConnection)'
+        repository: '$(imageRepository)'
+        command: 'build'
+        Dockerfile: '$(dockerfilePath)'
+        arguments: '$(buildArgs)'
+        tags: |
+          latest
+          $(tag)
+          $(semanticVersion)
 
-  - task: Docker@2
-    displayName: Push your-registry.azurecr.io/example/devcontainer:$(Build.BuildId)
-    timeoutInMinutes: 120
-    inputs:
-      containerRegistry: "your-registry"
-      repository: "example/devcontainer"
-      command: "push"
-      tags: |
-        latest
-        $(Build.BuildId)
+    - task: Bash@3
+      displayName: 'Test image - validate tools'
+      inputs:
+        targetType: 'inline'
+        script: |
+          echo "Running validation tests against built image..."
+          docker run --rm --entrypoint "" $(containerRegistry)/$(imageRepository):$(tag) bash -c "
+            set -e
+            echo '=== Terraform ===' && terraform version
+            echo '=== Terragrunt ===' && terragrunt --version
+            echo '=== kubectl ===' && kubectl version --client
+            echo '=== Helm ===' && helm version
+            echo '=== Azure CLI ===' && az version
+            echo '=== Ansible ===' && ansible --version
+            echo '=== PowerShell ===' && pwsh --version
+            echo '=== Python ===' && python3 --version
+            echo '=== tflint ===' && tflint --version
+            echo '=== checkov ===' && checkov --version
+            echo '=== yq ===' && yq --version
+            echo '=== jq ===' && jq --version
+            echo '=== git-crypt ===' && git-crypt --version
+            echo '=== pre-commit ===' && pre-commit --version
+            echo 'All tools validated successfully'
+          "
 
-  - task: Bash@3
-    displayName: Clean docker cache
-    inputs:
-      targetType: "inline"
-      script: |
-        docker system prune -a -f
-        
-# stages:
-# - stage: Validate
-#   displayName: 'Validate and Lint'
-#   jobs:
-#   - job: Lint
-#     displayName: 'Lint Scripts and Configs'
-#     steps:
-#     - task: Bash@3
-#       displayName: 'Validate Shell Scripts'
-#       inputs:
-#         targetType: 'inline'
-#         script: |
-#           echo "Checking shell scripts..."
-#           find files/scripts -name "*.sh" -type f -exec bash -n {} \;
-#           echo "All shell scripts are valid"
+- stage: SecurityScan
+  displayName: 'Security Scanning'
+  dependsOn: Build
+  condition: succeeded()
+  jobs:
+  - job: ScanImage
+    displayName: 'Vulnerability Scan'
+    steps:
+    - checkout: self
 
-#     - task: Bash@3
-#       displayName: 'Validate JSON Files'
-#       inputs:
-#         targetType: 'inline'
-#         script: |
-#           echo "Checking JSON files..."
-#           find . -name "*.json" -not -path "*/node_modules/*" -exec jq empty {} \;
-#           echo "All JSON files are valid"
+    - task: Bash@3
+      displayName: 'Scan Dockerfile with Checkov'
+      inputs:
+        targetType: 'inline'
+        script: |
+          pip3 install --quiet checkov
+          checkov -d .devcontainer --framework dockerfile --soft-fail
 
-#     - task: Bash@3
-#       displayName: 'Check Dockerfile'
-#       inputs:
-#         targetType: 'inline'
-#         script: |
-#           echo "Linting Dockerfile..."
-#           docker run --rm -i hadolint/hadolint < .devcontainer/Dockerfile || true
+    - task: Bash@3
+      displayName: 'Run Trivy scan'
+      inputs:
+        targetType: 'inline'
+        script: |
+          # Install Trivy if not present
+          if ! command -v trivy &> /dev/null; then
+            curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
+          fi
+          # Scan image for HIGH and CRITICAL vulnerabilities
+          trivy image --severity HIGH,CRITICAL --exit-code 0 $(containerRegistry)/$(imageRepository):$(tag)
 
-# - stage: Build
-#   displayName: 'Build and Test'
-#   dependsOn: Validate
-#   jobs:
-#   - job: BuildImage
-#     displayName: 'Build Docker Image'
-#     steps:
-#     - task: Docker@2
-#       displayName: 'Login to Azure Container Registry'
-#       inputs:
-#         command: 'login'
-#         containerRegistry: "your-registry"
+- stage: Push
+  displayName: 'Push to Registry'
+  dependsOn: SecurityScan
+  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/master'))
+  jobs:
+  - job: PushImage
+    displayName: 'Push to ACR'
+    steps:
+    - checkout: self
 
-#     - task: Docker@2
-#       displayName: 'Build Docker Image'
-#       inputs:
-#         command: 'build'
-#         repository: '$(imageRepository)'
-#         dockerfile: '$(dockerfilePath)'
-#         buildContext: '.'
-#         tags: |
-#           $(tag)
-#           $(semanticVersion)
-#           latest
-#         arguments: |
-#           --build-arg UBUNTU_VERSION=22.04
-#           --build-arg TERRAFORM_VERSION=1.13.5
-#           --build-arg KUBECTL_VERSION=1.34.2
-#           --build-arg HELM_VERSION=4.0.0
-#           --target final
+    - task: Docker@2
+      displayName: 'Push image to ACR'
+      timeoutInMinutes: 120
+      inputs:
+        containerRegistry: '$(containerRegistryConnection)'
+        repository: '$(imageRepository)'
+        command: 'push'
+        tags: |
+          latest
+          $(tag)
+          $(semanticVersion)
 
-#     - task: Bash@3
-#       displayName: 'Test Image - Validate Tools'
-#       inputs:
-#         targetType: 'inline'
-#         script: |
-#           echo "Running validation tests..."
-#           docker run --rm $(containerRegistry)/$(imageRepository):$(tag) bash -c "
-#             terraform version &&
-#             kubectl version --client &&
-#             helm version &&
-#             az version &&
-#             ansible --version &&
-#             pwsh --version &&
-#             docker --version
-#           "
+    - task: Bash@3
+      displayName: 'Build summary'
+      inputs:
+        targetType: 'inline'
+        script: |
+          echo "================================"
+          echo "DevContainer Build Complete"
+          echo "================================"
+          echo "Build ID: $(Build.BuildId)"
+          echo "Version: $(semanticVersion)"
+          echo "Branch: $(Build.SourceBranch)"
+          echo "Tags pushed:"
+          echo "  - $(containerRegistry)/$(imageRepository):latest"
+          echo "  - $(containerRegistry)/$(imageRepository):$(tag)"
+          echo "  - $(containerRegistry)/$(imageRepository):$(semanticVersion)"
+          echo "================================"
 
-# - stage: SecurityScan
-#   displayName: 'Security Scanning'
-#   dependsOn: Build
-#   condition: succeeded()
-#   jobs:
-#   - job: ScanImage
-#     displayName: 'Vulnerability Scan'
-#     steps:
-#     - task: Docker@2
-#       displayName: 'Login to ACR'
-#       inputs:
-#         command: 'login'
-#         containerRegistry: '$(azureServiceConnection)'
-
-#     - task: Bash@3
-#       displayName: 'Run Trivy Scan'
-#       inputs:
-#         targetType: 'inline'
-#         script: |
-#           # Install Trivy
-#           wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | sudo apt-key add -
-#           echo "deb https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main" | sudo tee -a /etc/apt/sources.list.d/trivy.list
-#           sudo apt-get update
-#           sudo apt-get install trivy
-          
-#           # Scan image
-#           trivy image --severity HIGH,CRITICAL $(containerRegistry)/$(imageRepository):$(tag) || true
-
-#     - task: Bash@3
-#       displayName: 'Scan with Checkov'
-#       inputs:
-#         targetType: 'inline'
-#         script: |
-#           pip install checkov
-#           checkov -d .devcontainer --framework dockerfile || true
-
-# - stage: Push
-#   displayName: 'Push to Registry'
-#   dependsOn: SecurityScan
-#   condition: and(succeeded(), in(variables['Build.SourceBranch'], 'refs/heads/main', 'refs/heads/develop'))
-#   jobs:
-#   - job: PushImage
-#     displayName: 'Push to ACR'
-#     steps:
-#     - task: Docker@2
-#       displayName: 'Login to ACR'
-#       inputs:
-#         command: 'login'
-#         containerRegistry: '$(azureServiceConnection)'
-
-#     - task: Docker@2
-#       displayName: 'Push Docker Image'
-#       inputs:
-#         command: 'push'
-#         repository: '$(imageRepository)'
-#         containerRegistry: '$(azureServiceConnection)'
-#         tags: |
-#           $(tag)
-#           $(semanticVersion)
-#           latest
-
-#     - task: Bash@3
-#       displayName: 'Tag Semantic Version'
-#       inputs:
-#         targetType: 'inline'
-#         script: |
-#           echo "Image pushed with tags:"
-#           echo "  - $(containerRegistry)/$(imageRepository):$(tag)"
-#           echo "  - $(containerRegistry)/$(imageRepository):$(semanticVersion)"
-#           echo "  - $(containerRegistry)/$(imageRepository):latest"
-
-#     - task: Docker@2
-#       displayName: 'Logout from ACR'
-#       inputs:
-#         command: 'logout'
-#         containerRegistry: '$(azureServiceConnection)'
-
-# - stage: Notify
-#   displayName: 'Notification'
-#   dependsOn: Push
-#   condition: always()
-#   jobs:
-#   - job: SendNotification
-#     displayName: 'Send Build Notification'
-#     steps:
-#     - task: Bash@3
-#       displayName: 'Build Summary'
-#       inputs:
-#         targetType: 'inline'
-#         script: |
-#           echo "================================"
-#           echo "DevContainer Build Complete"
-#           echo "================================"
-#           echo "Build ID: $(Build.BuildId)"
-#           echo "Version: $(semanticVersion)"
-#           echo "Branch: $(Build.SourceBranch)"
-#           echo "Status: $(Agent.JobStatus)"
-#           echo "================================"
-          
-#     # Uncomment and configure for Slack/Teams notifications
-#     # - task: InvokeRESTAPI@1
-#     #   displayName: 'Send Slack Notification'
-#     #   inputs:
-#     #     connectionType: 'connectedServiceName'
-#     #     serviceConnection: 'slack-webhook'
-#     #     method: 'POST'
-#     #     body: |
-#     #       {
-#     #         "text": "DevContainer build $(Agent.JobStatus) - v$(semanticVersion)"
-#     #       }
+    - task: Bash@3
+      displayName: 'Clean docker cache'
+      inputs:
+        targetType: 'inline'
+        script: |
+          docker system prune -a -f

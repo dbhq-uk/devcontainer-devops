@@ -1,5 +1,5 @@
-#!/bin/sh
-set -e
+#!/bin/bash
+set -euo pipefail
 
 WORKDIR="/tmp/install-ansible"
 mkdir -p "${WORKDIR}"

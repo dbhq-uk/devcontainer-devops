@@ -70,14 +70,11 @@ fi
 
 # Ansible settings
 export ANSIBLE_NOCOWS=1
+# WARNING: SSH host key checking is disabled for dev convenience.
+# Do NOT carry this setting into production environments.
 export ANSIBLE_HOST_KEY_CHECKING=False
 
 # Path additions
 export PATH="$HOME/.local/bin:$PATH"
 
-# Git configuration helpers
-git config --global core.editor nano
-git config --global pull.rebase false
-git config --global init.defaultBranch main
-git config --global color.ui auto
 

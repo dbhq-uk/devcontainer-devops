@@ -1,17 +1,16 @@
 ######################################################### TOOLCHAIN VERSIONING #########################################
 # Leave version blank to install latest, or specify a version to pin
+# NOTE: Docker, Azure CLI, and Ansible always install latest (scripts do not support version pinning)
+# TODO: Ubuntu 22.04 LTS reaches EOL April 2027. Plan migration to 24.04 LTS before then.
+#       When upgrading, also update install-powershell.sh which sources /etc/os-release for the MS repo URL.
 ARG UBUNTU_VERSION=22.04
-ARG DOCKER_VERSION=
 ARG KUBECTL_VERSION=
 ARG HELM_VERSION=
 ARG TERRAFORM_VERSION=
 ARG TERRAGRUNT_VERSION=
-ARG AZ_CLI_VERSION=
-ARG ANSIBLE_VERSION=
 ARG POWERSHELL_VERSION=
 ARG KUBELOGIN_VERSION=
 ARG YQ_VERSION=
-ARG JQ_VERSION=
 ARG TFLINT_VERSION=
 ARG CHECKOV_VERSION=
 
@@ -22,12 +21,9 @@ ARG KUBECTL_VERSION
 ARG HELM_VERSION
 ARG TERRAFORM_VERSION
 ARG TERRAGRUNT_VERSION
-ARG AZ_CLI_VERSION
-ARG ANSIBLE_VERSION
 ARG POWERSHELL_VERSION
 ARG KUBELOGIN_VERSION
 ARG YQ_VERSION
-ARG JQ_VERSION
 ARG TFLINT_VERSION
 ARG CHECKOV_VERSION
 
@@ -66,7 +62,7 @@ RUN /tmp/install/install-terraform.sh ${TERRAFORM_VERSION} && \
 
 RUN /tmp/install/install-docker.sh
 
-RUN /tmp/install/install-ansible.sh ${ANSIBLE_VERSION}
+RUN /tmp/install/install-ansible.sh
 
 RUN /tmp/install/install-helm.sh ${HELM_VERSION} && \
     /tmp/install/install-kubectl.sh ${KUBECTL_VERSION} && \
@@ -75,34 +71,32 @@ RUN /tmp/install/install-helm.sh ${HELM_VERSION} && \
 RUN /tmp/install/install-powershell.sh ${POWERSHELL_VERSION}
 
 RUN /tmp/install/install-yq.sh ${YQ_VERSION} && \
-    /tmp/install/install-jq.sh ${JQ_VERSION} && \
     /tmp/install/install-git-crypt.sh && \
     /tmp/install/install-pre-commit.sh
 
-# Set zsh as default shell for vscode user
-RUN chsh -s /bin/zsh ${USERNAME}
-RUN cp -r /home/vscode/. /tmp-home
+# Set zsh as default shell and prepare home directory template
+RUN chsh -s /bin/zsh ${USERNAME} && \
+    cp -r /home/vscode/. /tmp-home
 
 COPY ./files/home/.bash_aliases /tmp-home/.bash_aliases
 COPY ./files/home/.environment /tmp-home/.environment
 COPY ./files/home/.zshrc /tmp-home/.zshrc
 COPY ./files/home/Microsoft.PowerShell_profile.ps1 /tmp-home/.config/powershell/Microsoft.PowerShell_profile.ps1
 COPY ./files/home/ps_theme.json /tmp-home/.config/powershell/ps_theme.json
+COPY ./files/entrypoint.sh /usr/local/bin/entrypoint.sh
 
-# Source environment in bashrc
+# Source environment in bashrc, install zsh plugins, and cleanup
 RUN echo '' >> /tmp-home/.bashrc && \
     echo '# Load DevContainer environment' >> /tmp-home/.bashrc && \
     echo 'if [ -f ~/.environment ]; then' >> /tmp-home/.bashrc && \
     echo '    source ~/.environment' >> /tmp-home/.bashrc && \
-    echo 'fi' >> /tmp-home/.bashrc
+    echo 'fi' >> /tmp-home/.bashrc && \
+    git clone --branch v0.7.1 --depth 1 https://github.com/zsh-users/zsh-autosuggestions /tmp-home/.oh-my-zsh/custom/plugins/zsh-autosuggestions && \
+    git clone --branch 0.8.0 --depth 1 https://github.com/zsh-users/zsh-syntax-highlighting.git /tmp-home/.oh-my-zsh/custom/plugins/zsh-syntax-highlighting && \
+    rm -rf /tmp/install-* /tmp/install /var/lib/apt/lists/*
 
-COPY ./files/entrypoint.sh /usr/local/bin/entrypoint.sh
-
-RUN git clone https://github.com/zsh-users/zsh-autosuggestions /tmp-home/.oh-my-zsh/custom/plugins/zsh-autosuggestions && \
-    git clone https://github.com/zsh-users/zsh-syntax-highlighting.git /tmp-home/.oh-my-zsh/custom/plugins/zsh-syntax-highlighting
-
-# Cleanup - remove install temp directories but keep /tmp-home
-RUN rm -rf /tmp/install-* /tmp/install /var/lib/apt/lists/*
+HEALTHCHECK --interval=60s --timeout=10s --retries=3 \
+    CMD terraform version > /dev/null 2>&1 && python3 --version > /dev/null 2>&1 || exit 1
 
 USER $USERNAME
 

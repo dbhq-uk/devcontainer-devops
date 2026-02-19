@@ -1,12 +1,12 @@
 #!/bin/bash
-set -e
+set -euo pipefail
 
 WORKDIR="/tmp/install-kubelogin"
 mkdir -p "${WORKDIR}"
 cd "${WORKDIR}"
 
 # Get latest version if not specified
-if [ -z "$1" ]; then
+if [ -z "${1:-}" ]; then
     echo "Fetching latest kubelogin version..."
     VERSION=$(curl -s https://api.github.com/repos/Azure/kubelogin/releases/latest | grep '"tag_name":' | sed -E 's/.*"v([^"]+)".*/\1/')
     echo "Latest version: ${VERSION}"

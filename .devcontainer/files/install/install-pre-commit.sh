@@ -1,7 +1,7 @@
 #!/bin/bash
 # Install pre-commit framework
 
-set -e
+set -euo pipefail
 
 echo "Installing pre-commit framework..."
 

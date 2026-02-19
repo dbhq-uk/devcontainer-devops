@@ -1,12 +1,12 @@
 #!/bin/bash
-set -e
+set -euo pipefail
 
 WORKDIR="/tmp/install-kubectl"
 mkdir -p "${WORKDIR}"
 cd "${WORKDIR}"
 
 # Get latest version if not specified
-if [ -z "$1" ]; then
+if [ -z "${1:-}" ]; then
     echo "Fetching latest kubectl version..."
     VERSION=$(curl -L -s https://dl.k8s.io/release/stable.txt | sed 's/v//')
     echo "Latest version: ${VERSION}"

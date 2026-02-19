@@ -1,5 +1,5 @@
 #!/bin/bash
-set -e
+set -euo pipefail
 
 WORKDIR="/tmp/install-powershell"
 mkdir -p "${WORKDIR}"
@@ -13,11 +13,11 @@ apt-get update
 # Install dependencies
 apt-get install -y wget apt-transport-https software-properties-common
 
-# Get Ubuntu version
+# Get Ubuntu version dynamically
 . /etc/os-release
 
-# Download the Microsoft repository keys
-wget -q "https://packages.microsoft.com/config/ubuntu/22.04/packages-microsoft-prod.deb"
+# Download the Microsoft repository keys using detected version
+wget -q "https://packages.microsoft.com/config/ubuntu/${VERSION_ID}/packages-microsoft-prod.deb"
 
 # Register the Microsoft repository keys
 dpkg -i packages-microsoft-prod.deb
@@ -41,6 +41,9 @@ for MODULE in ${MODULES}; do
     pwsh -NoProfile -NonInteractive -Command "if (-not (Get-Module -ListAvailable -Name '${MODULE}')) { Install-Module -Name '${MODULE}' -Scope AllUsers -Repository PSGallery -Force -AllowClobber }"
 done
 
-curl -s https://ohmyposh.dev/install.sh | bash -s
+# Install oh-my-posh (download then execute, not piped)
+curl -sSLo /tmp/install-ohmyposh.sh https://ohmyposh.dev/install.sh
+bash /tmp/install-ohmyposh.sh
+rm -f /tmp/install-ohmyposh.sh
 
 echo "PowerShell modules installed successfully"
