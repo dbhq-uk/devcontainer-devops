@@ -181,7 +181,9 @@ stages:
             curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
           fi
           # Scan image for HIGH and CRITICAL vulnerabilities
-          trivy image --severity HIGH,CRITICAL --exit-code 0 $(containerRegistry)/$(imageRepository):$(tag)
+          # --scanners vuln: skip secret scanning (times out on large PowerShell module files)
+          # --timeout 15m: allow extra time for large devcontainer image
+          trivy image --scanners vuln --timeout 15m --severity HIGH,CRITICAL --exit-code 0 $(containerRegistry)/$(imageRepository):$(tag)
 
 - stage: Push
   displayName: 'Push to Registry'
