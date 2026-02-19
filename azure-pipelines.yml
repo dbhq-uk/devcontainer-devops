@@ -69,7 +69,8 @@ stages:
         script: |
           echo "Checking JSON files..."
           errors=0
-          for json in $(find . -name "*.json" -not -path "*/.git/*"); do
+          # Skip devcontainer.json as it uses JSONC (JSON with comments) which is valid per spec
+          for json in $(find . -name "*.json" -not -path "*/.git/*" -not -name "devcontainer.json"); do
             if ! python3 -m json.tool "$json" > /dev/null 2>&1; then
               echo "FAIL: $json"
               errors=$((errors + 1))
