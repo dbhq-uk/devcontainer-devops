@@ -27,8 +27,8 @@ curl -L "$DOWNLOAD_URL" -o yq
 curl -L "https://github.com/mikefarah/yq/releases/download/v${VERSION}/checksums" -o checksums
 
 CHECKSUM="$(sha256sum yq | awk '{print $1}')"
-# Extract the 64-char hex hash from the line matching the exact binary name
-EXPECTED_CHECKSUM="$(grep -w "${YQ_BINARY}" checksums | grep -oE '[a-f0-9]{64}' | head -1)"
+# Extract the 64-char hex hash matching the exact binary name (not .tar.gz variant)
+EXPECTED_CHECKSUM="$(grep -E "(^|[[:space:]])${YQ_BINARY}([[:space:]]|$)" checksums | grep -oE '[a-f0-9]{64}' | head -1)"
 
 if [ -z "${EXPECTED_CHECKSUM}" ]; then
     echo "ERROR: Could not find checksum for ${YQ_BINARY} in checksums file"
