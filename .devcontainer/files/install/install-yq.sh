@@ -27,20 +27,19 @@ curl -L "$DOWNLOAD_URL" -o yq
 curl -L "https://github.com/mikefarah/yq/releases/download/v${VERSION}/checksums" -o checksums
 
 CHECKSUM="$(sha256sum yq | awk '{print $1}')"
-# Extract the 64-char hex hash matching the exact binary name (not .tar.gz variant)
-EXPECTED_CHECKSUM="$(grep -E "(^|[[:space:]])${YQ_BINARY}([[:space:]]|$)" checksums | grep -oE '[a-f0-9]{64}' | head -1)"
+# Checksums file contains multiple hash types per line (CRC32, MD5, SHA1, SHA256, SHA512, etc.)
+# Verify our SHA256 appears in the correct binary's line
+BINARY_LINE="$(grep -E "^${YQ_BINARY}[[:space:]]" checksums)"
 
-if [ -z "${EXPECTED_CHECKSUM}" ]; then
-    echo "ERROR: Could not find checksum for ${YQ_BINARY} in checksums file"
-    echo "Checksums file contents:"
-    cat checksums
+if [ -z "${BINARY_LINE}" ]; then
+    echo "ERROR: Could not find ${YQ_BINARY} in checksums file"
     exit 1
 fi
 
-if [ "$CHECKSUM" == "$EXPECTED_CHECKSUM" ]; then
-    echo "Checksum verified successfully"
+if echo "${BINARY_LINE}" | grep -q "${CHECKSUM}"; then
+    echo "Checksum verified successfully (SHA256: ${CHECKSUM})"
 else
-    echo "ERROR: Checksum mismatch! Expected: ${EXPECTED_CHECKSUM}, Got: ${CHECKSUM}"
+    echo "ERROR: SHA256 ${CHECKSUM} not found in checksums for ${YQ_BINARY}"
     exit 1
 fi
 
