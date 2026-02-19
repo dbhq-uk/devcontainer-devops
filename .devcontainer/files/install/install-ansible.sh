@@ -5,19 +5,10 @@ WORKDIR="/tmp/install-ansible"
 mkdir -p "${WORKDIR}"
 cd "${WORKDIR}"
 
-# Install Ansible on Ubuntu
+# Install Ansible via pip (PPA is unreliable on Ubuntu 24.04+)
+echo "Installing Ansible via pip..."
 
-# Update package list
-apt-get update
-
-# Install dependencies
-apt-get install -y software-properties-common
-
-# Add Ansible PPA
-add-apt-repository --yes --update ppa:ansible/ansible
-
-# Install Ansible
-apt-get install -y ansible
+python3 -m pip install --no-cache-dir ansible
 
 echo "Ansible installed successfully"
 

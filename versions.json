@@ -1,6 +1,6 @@
 {
   "_comment": "Single source of truth for tool versions. Empty string = install latest.",
-  "ubuntu": "22.04",
+  "ubuntu": "24.04",
   "terraform": "",
   "terragrunt": "",
   "tflint": "",

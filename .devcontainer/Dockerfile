@@ -1,9 +1,7 @@
 ######################################################### TOOLCHAIN VERSIONING #########################################
 # Leave version blank to install latest, or specify a version to pin
 # NOTE: Docker, Azure CLI, and Ansible always install latest (scripts do not support version pinning)
-# TODO: Ubuntu 22.04 LTS reaches EOL April 2027. Plan migration to 24.04 LTS before then.
-#       When upgrading, also update install-powershell.sh which sources /etc/os-release for the MS repo URL.
-ARG UBUNTU_VERSION=22.04
+ARG UBUNTU_VERSION=24.04
 ARG KUBECTL_VERSION=
 ARG HELM_VERSION=
 ARG TERRAFORM_VERSION=
@@ -40,6 +38,10 @@ ARG PKGS="\
     ca-certificates \
     iputils-ping \
     "
+
+# Allow system-wide pip installs (PEP 668 on Ubuntu 24.04+)
+# Safe in a devcontainer where system Python is the intended target
+ENV PIP_BREAK_SYSTEM_PACKAGES=1
 
 RUN apt-get update && \
     apt-get install --no-install-recommends -y ${PKGS} && \

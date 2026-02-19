@@ -10,7 +10,7 @@
     //     "context": "",
     //     "target": "final",
     //     "args": {
-    //         "UBUNTU_VERSION": "22.04"
+    //         "UBUNTU_VERSION": "24.04"
     //         // Leave versions empty to install latest automatically
     //         // Or specify versions to pin, e.g.:
     //         // "TERRAFORM_VERSION": "1.13.5",

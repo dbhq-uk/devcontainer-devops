@@ -1,6 +1,6 @@
 # DevOps Development Container
 
-A comprehensive development container for DevOps and Infrastructure-as-Code workflows, built on Ubuntu 22.04 with essential tools for cloud infrastructure management, container orchestration, and automation.
+A comprehensive development container for DevOps and Infrastructure-as-Code workflows, built on Ubuntu 24.04 with essential tools for cloud infrastructure management, container orchestration, and automation.
 
 ## 🚀 Features
 
@@ -160,7 +160,7 @@ Update build arguments in `.devcontainer/devcontainer.json`:
 
 ```json
 "args": {
-    "UBUNTU_VERSION": "22.04",
+    "UBUNTU_VERSION": "24.04",
     "TERRAFORM_VERSION": "1.13.5",
     "POWERSHELL_VERSION": "7.5.4",
     ...

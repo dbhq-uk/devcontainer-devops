@@ -31,7 +31,7 @@ Edit `.devcontainer/build/devcontainer.json` or `.devcontainer/local/devcontaine
 {
     "build": {
         "args": {
-            "UBUNTU_VERSION": "22.04",
+            "UBUNTU_VERSION": "24.04",
             "TERRAFORM_VERSION": "1.13.5",     // Pin Terraform
             "KUBECTL_VERSION": "1.30.0",       // Pin kubectl
             "HELM_VERSION": "3.14.0"           // Pin Helm
@@ -88,7 +88,7 @@ This will:
 ✅ **Use latest versions** for maximum features and security patches
 ```json
 "args": {
-    "UBUNTU_VERSION": "22.04"
+    "UBUNTU_VERSION": "24.04"
     // No version pinning - always latest
 }
 ```
@@ -97,7 +97,7 @@ This will:
 ⚠️ **Pin versions** for reproducibility
 ```json
 "args": {
-    "UBUNTU_VERSION": "22.04",
+    "UBUNTU_VERSION": "24.04",
     "TERRAFORM_VERSION": "1.13.5",
     "KUBECTL_VERSION": "1.30.0",
     "HELM_VERSION": "3.14.0"
@@ -108,7 +108,7 @@ This will:
 🔒 **Pin all versions** for stability
 ```json
 "args": {
-    "UBUNTU_VERSION": "22.04",
+    "UBUNTU_VERSION": "24.04",
     "TERRAFORM_VERSION": "1.13.5",
     "TERRAGRUNT_VERSION": "0.70.4",
     "KUBECTL_VERSION": "1.30.0",
@@ -236,14 +236,14 @@ Always test after updates!
 ### Pure Latest (Development)
 ```json
 "args": {
-    "UBUNTU_VERSION": "22.04"
+    "UBUNTU_VERSION": "24.04"
 }
 ```
 
 ### Mixed (Flexible Development)
 ```json
 "args": {
-    "UBUNTU_VERSION": "22.04",
+    "UBUNTU_VERSION": "24.04",
     "TERRAFORM_VERSION": "1.13.5",  // Pin for project compatibility
     // Others use latest
 }
@@ -252,7 +252,7 @@ Always test after updates!
 ### Fully Pinned (Production)
 ```json
 "args": {
-    "UBUNTU_VERSION": "22.04",
+    "UBUNTU_VERSION": "24.04",
     "TERRAFORM_VERSION": "1.13.5",
     "KUBECTL_VERSION": "1.30.0",
     "HELM_VERSION": "3.14.0",
