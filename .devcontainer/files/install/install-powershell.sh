@@ -37,9 +37,9 @@ pwsh -NoProfile -NonInteractive -Command "
     }
 "
 
-# Install oh-my-posh (download then execute, not piped)
+# Install oh-my-posh to a system-wide location so the vscode user can find it
 curl -sSLo /tmp/install-ohmyposh.sh https://ohmyposh.dev/install.sh
-bash /tmp/install-ohmyposh.sh
+bash /tmp/install-ohmyposh.sh -d /usr/local/bin
 rm -f /tmp/install-ohmyposh.sh
 
 echo "PowerShell modules installed successfully"
