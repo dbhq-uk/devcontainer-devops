@@ -11,6 +11,8 @@ ARG KUBELOGIN_VERSION=
 ARG YQ_VERSION=
 ARG TFLINT_VERSION=
 ARG CHECKOV_VERSION=
+ARG NODE_VERSION=
+ARG CLAUDE_CODE_VERSION=
 
 FROM mcr.microsoft.com/devcontainers/base:ubuntu-${UBUNTU_VERSION} AS final
 
@@ -24,6 +26,8 @@ ARG KUBELOGIN_VERSION
 ARG YQ_VERSION
 ARG TFLINT_VERSION
 ARG CHECKOV_VERSION
+ARG NODE_VERSION
+ARG CLAUDE_CODE_VERSION
 
 # Install base packages
 ARG PKGS="\
@@ -77,6 +81,9 @@ RUN /tmp/install/install-powershell.sh ${POWERSHELL_VERSION}
 RUN /tmp/install/install-yq.sh ${YQ_VERSION} && \
     /tmp/install/install-git-crypt.sh && \
     /tmp/install/install-pre-commit.sh
+
+RUN /tmp/install/install-node.sh ${NODE_VERSION} && \
+    /tmp/install/install-claude-code.sh ${CLAUDE_CODE_VERSION}
 
 # Set zsh as default shell and prepare home directory template
 RUN chsh -s /bin/zsh ${USERNAME} && \

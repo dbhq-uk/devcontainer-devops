@@ -93,6 +93,18 @@ CHECKOV_LATEST=$(curl -s https://pypi.org/pypi/checkov/json | jq -r '.info.versi
 echo -e "  Latest: ${GREEN}${CHECKOV_LATEST}${NC}"
 echo ""
 
+# Node.js
+echo -e "${BLUE}Node.js LTS:${NC}"
+NODE_LATEST=$(curl -s https://nodejs.org/dist/index.json | jq -r '[.[] | select(.lts != false)][0].version' | sed 's/v//')
+echo -e "  Latest LTS: ${GREEN}${NODE_LATEST}${NC}"
+echo ""
+
+# Claude Code
+echo -e "${BLUE}Claude Code:${NC}"
+CLAUDE_LATEST=$(curl -s https://registry.npmjs.org/@anthropic-ai/claude-code/latest | jq -r '.version')
+echo -e "  Latest: ${GREEN}${CLAUDE_LATEST}${NC}"
+echo ""
+
 echo "=================================="
 echo "Update devcontainer.json with:"
 echo "=================================="

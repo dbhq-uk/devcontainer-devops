@@ -71,6 +71,13 @@ echo "Programming Languages:"
 validate_tool "python3" "python3 --version" || ((FAILURES++))
 validate_tool "pip3" "pip3 --version" || ((FAILURES++))
 validate_tool "pwsh" "pwsh --version" || ((FAILURES++))
+validate_tool "node" "node --version" || ((FAILURES++))
+validate_tool "npm" "npm --version" || ((FAILURES++))
+echo ""
+
+# AI Tools
+echo "AI Tools:"
+validate_tool "claude" "claude --version" || ((FAILURES++))
 echo ""
 
 # Security Tools

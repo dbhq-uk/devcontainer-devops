@@ -10,6 +10,8 @@
   "kubelogin": "",
   "yq": "",
   "powershell": "",
+  "node": "",
+  "claude_code": "",
   "zsh_autosuggestions": "v0.7.1",
   "zsh_syntax_highlighting": "0.8.0",
   "_always_latest": {
