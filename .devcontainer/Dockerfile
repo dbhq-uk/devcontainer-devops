@@ -10,6 +10,7 @@ ARG POWERSHELL_VERSION=
 ARG KUBELOGIN_VERSION=
 ARG YQ_VERSION=
 ARG TFLINT_VERSION=
+ARG TF_SUMMARIZE_VERSION=
 ARG CHECKOV_VERSION=
 ARG NODE_VERSION=
 ARG CLAUDE_CODE_VERSION=
@@ -25,6 +26,7 @@ ARG POWERSHELL_VERSION
 ARG KUBELOGIN_VERSION
 ARG YQ_VERSION
 ARG TFLINT_VERSION
+ARG TF_SUMMARIZE_VERSION
 ARG CHECKOV_VERSION
 ARG NODE_VERSION
 ARG CLAUDE_CODE_VERSION
@@ -66,7 +68,8 @@ RUN /tmp/install/install-azure-cli.sh
 RUN /tmp/install/install-terraform.sh ${TERRAFORM_VERSION} && \
     /tmp/install/install-terragrunt.sh ${TERRAGRUNT_VERSION} && \
     /tmp/install/install-tflint.sh ${TFLINT_VERSION} && \
-    /tmp/install/install-checkov.sh ${CHECKOV_VERSION} 
+    /tmp/install/install-tf-summarize.sh ${TF_SUMMARIZE_VERSION} && \
+    /tmp/install/install-checkov.sh ${CHECKOV_VERSION}
 
 RUN /tmp/install/install-docker.sh
 
