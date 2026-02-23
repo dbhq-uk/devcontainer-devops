@@ -26,9 +26,9 @@
     "runArgs": ["--network=host"],
     "mounts": [
         "source=${localWorkspaceFolder},target=/workspace/devcontainer,type=bind,consistency=cached",
-        "type=volume,source=dev-home,target=/home/vscode"
+        "type=volume,source=dev-home-${localEnv:USER},target=/home/vscode"
     ],
-    "workspaceMount": "source=dev-workspace,target=/workspace,type=volume",
+    "workspaceMount": "source=dev-workspace-${localEnv:USER},target=/workspace,type=volume",
     "workspaceFolder": "/workspace",
     "postCreateCommand": "sudo bash -c 'echo \"127.0.0.1 $(hostname)\" >> /etc/hosts' && sudo chown -R vscode:vscode /workspace && sudo chown -R vscode:vscode /home/vscode",
     "postStartCommand": "sudo /usr/local/bin/entrypoint.sh",
