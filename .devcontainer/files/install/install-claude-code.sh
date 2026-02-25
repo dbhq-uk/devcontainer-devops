@@ -1,16 +1,10 @@
 #!/bin/bash
 set -euo pipefail
 
-echo "Installing Claude Code..."
+echo "Installing Claude Code using native installer..."
 
-# Install specific version if provided, otherwise install latest
-if [ -n "${1:-}" ]; then
-    echo "Installing Claude Code version ${1}..."
-    npm install -g "@anthropic-ai/claude-code@${1}"
-else
-    echo "Installing latest Claude Code..."
-    npm install -g @anthropic-ai/claude-code
-fi
+# Install Claude Code using the official native installer
+curl -fsSL https://claude.ai/install.sh | sh
 
 # Verify installation
 claude --version
