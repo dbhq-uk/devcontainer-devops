@@ -33,6 +33,11 @@
     "postCreateCommand": "sudo bash -c 'echo \"127.0.0.1 $(hostname)\" >> /etc/hosts' && sudo chown -R vscode:vscode /workspace && sudo chown -R vscode:vscode /home/vscode",
     "postStartCommand": "sudo /usr/local/bin/entrypoint.sh",
 
+    "containerEnv": {
+        "NODE_OPTIONS": "--max-old-space-size=4096",
+        "CLAUDE_CONFIG_DIR": "/home/vscode/.claude"
+    },
+
     "customizations": {
         "vscode": {
             "extensions": [
