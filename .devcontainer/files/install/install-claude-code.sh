@@ -4,7 +4,7 @@ set -euo pipefail
 echo "Installing Claude Code using native installer..."
 
 # Install Claude Code using the official native installer
-curl -fsSL https://claude.ai/install.sh | sh
+curl -fsSL https://claude.ai/install.sh | bash
 
 # Verify installation
 claude --version
