@@ -30,7 +30,7 @@
     ],
     "workspaceMount": "source=dev-workspace-${localEnv:USER},target=/workspace,type=volume",
     "workspaceFolder": "/workspace",
-    "postCreateCommand": "sudo bash -c 'echo \"127.0.0.1 $(hostname)\" >> /etc/hosts' && sudo chown -R vscode:vscode /workspace && sudo chown -R vscode:vscode /home/vscode",
+    "postCreateCommand": "bash -c 'echo \"127.0.0.1 $(hostname)\" | sudo tee -a /etc/hosts > /dev/null' && sudo chown -R vscode:vscode /workspace && sudo chown -R vscode:vscode /home/vscode || true",
     "postStartCommand": "sudo /usr/local/bin/entrypoint.sh",
 
     "containerEnv": {
