@@ -13,6 +13,7 @@ ARG TFLINT_VERSION=
 ARG TF_SUMMARIZE_VERSION=
 ARG CHECKOV_VERSION=
 ARG NODE_VERSION=
+ARG AZCOPY_VERSION=
 ARG CLAUDE_CODE_VERSION=
 FROM mcr.microsoft.com/devcontainers/base:ubuntu-${UBUNTU_VERSION} AS final
 
@@ -26,6 +27,7 @@ ARG KUBELOGIN_VERSION
 ARG YQ_VERSION
 ARG TFLINT_VERSION
 ARG TF_SUMMARIZE_VERSION
+ARG AZCOPY_VERSION
 ARG CHECKOV_VERSION
 ARG NODE_VERSION
 ARG CLAUDE_CODE_VERSION
@@ -63,6 +65,8 @@ RUN chmod +x /tmp/install/*.sh
 RUN /tmp/install/install-python-tools.sh
 
 RUN /tmp/install/install-azure-cli.sh
+
+RUN /tmp/install/install-azcopy.sh ${AZCOPY_VERSION}
 
 RUN /tmp/install/install-terraform.sh ${TERRAFORM_VERSION} && \
     /tmp/install/install-terragrunt.sh ${TERRAGRUNT_VERSION} && \
