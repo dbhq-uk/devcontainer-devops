@@ -1,9 +1,9 @@
 {
     // Option 1: Use pre-built image from Azure Container Registry
-    // Requires: az acr login --name your-registry
-    // docker login your-registry.azurecr.io -u your-registry -p <password>
+    // Requires: az acr login --name xxx
+    // docker login xxx.azurecr.io -u xxx -p <password>
 
-    "image": "your-registry.azurecr.io/example/devcontainer:latest",
+    "image": "xxx.xxx/devcontainer:latest",
 
     // Option 2: Build from local Dockerfile
     // Uncomment the section below and comment out "image" above to build locally
