@@ -1,13 +1,13 @@
 trigger:
   branches:
     include:
-      - master
+      - main
 
 schedules:
   - cron: 0 0 * * Sun
     displayName: Weekly Rebuild
     branches:
-      include: ["master"]
+      include: ["main"]
     always: true
     batch: true
 
@@ -222,7 +222,7 @@ stages:
 - stage: Push
   displayName: 'Push to Registry'
   dependsOn: SecurityScan
-  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/master'))
+  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
   jobs:
   - job: PushImage
     displayName: 'Push to ACR'

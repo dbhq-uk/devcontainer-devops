@@ -199,7 +199,7 @@ An Azure DevOps pipeline is included to automatically build and push the contain
      variable group and the SBOM upload task
 
 3. **Pipeline Triggers:**
-   - Automatically triggers on commits to `master`
+   - Automatically triggers on commits to `main`
    - Weekly scheduled rebuild (Sundays, 00:00) using `--no-cache` so unpinned
      tools and the base image pick up upstream updates
    - Publishes an SBOM to Dependency Track
