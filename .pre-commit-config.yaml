@@ -69,8 +69,8 @@ repos:
   - repo: https://github.com/hadolint/hadolint
     rev: v2.12.0
     hooks:
+      # Ignores come from .hadolint.yaml so this matches CI exactly
       - id: hadolint-docker
-        args: ['--ignore', 'DL3008', '--ignore', 'DL3009']
 
   # Markdown linting
   - repo: https://github.com/igorshubovych/markdownlint-cli

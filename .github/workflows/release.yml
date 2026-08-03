@@ -1,0 +1,140 @@
+name: release
+
+# Cuts a calendar-versioned release every Sunday from a no-cache rebuild, so
+# the published image tracks upstream tool and base-image updates.
+#
+# CalVer rather than SemVer on purpose: almost every version in versions.json
+# is "install latest", so a tag records what the world looked like on a given
+# day. It cannot promise a compatibility contract, and SemVer would imply one.
+#
+# NOTE: GitHub disables scheduled workflows after 60 days without repository
+# activity. If releases stop appearing, check whether the schedule was
+# disabled before looking for a bug.
+
+on:
+  schedule:
+    - cron: '0 3 * * 0'
+  workflow_dispatch:
+    inputs:
+      no-cache:
+        description: Rebuild from scratch so unpinned tools pick up upstream updates
+        type: boolean
+        default: true
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  version:
+    name: resolve version
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    outputs:
+      version: ${{ steps.calc.outputs.version }}
+      month: ${{ steps.calc.outputs.month }}
+    steps:
+      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
+        with:
+          fetch-depth: 0
+
+      - name: Compute CalVer
+        id: calc
+        run: |
+          set -euo pipefail
+          base="$(date -u +%Y.%m.%d)"
+          version="${base}"
+          n=1
+          # A second release on the same day becomes .2, .3, and so on
+          while git rev-parse -q --verify "refs/tags/v${version}" > /dev/null 2>&1; do
+            n=$((n + 1))
+            version="${base}.${n}"
+          done
+          {
+            echo "version=${version}"
+            echo "month=$(date -u +%Y.%m)"
+          } >> "$GITHUB_OUTPUT"
+          echo "Releasing v${version}"
+
+  build:
+    name: build
+    needs: version
+    uses: ./.github/workflows/build.yml
+    permissions:
+      contents: read
+      packages: write
+      security-events: write
+      id-token: write
+      attestations: write
+      artifact-metadata: write
+    with:
+      publish: true
+      no-cache: ${{ github.event_name == 'schedule' || inputs.no-cache }}
+      tags: |
+        type=raw,value=${{ needs.version.outputs.version }}
+        type=raw,value=${{ needs.version.outputs.month }}
+        type=raw,value=latest
+
+  release:
+    name: publish release
+    needs: [version, build]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+      packages: read
+    steps:
+      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
+
+      - name: Log in to GHCR
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # The SBOM is already attached to the image as a build attestation; this
+      # pulls it out into a file so the release has a downloadable copy.
+      - name: Extract SBOM
+        run: |
+          set -euo pipefail
+          docker buildx imagetools inspect \
+            "ghcr.io/${{ github.repository }}@${{ needs.build.outputs.digest }}" \
+            --format '{{ json .SBOM }}' > sbom.json
+          echo "SBOM: $(wc -c < sbom.json) bytes"
+
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ needs.version.outputs.version }}
+          DIGEST: ${{ needs.build.outputs.digest }}
+        run: |
+          set -euo pipefail
+          cat > notes.md <<EOF
+          Multi-architecture devcontainer image for \`linux/amd64\` and \`linux/arm64\`.
+
+          \`\`\`
+          docker pull ghcr.io/${{ github.repository }}:${VERSION}
+          \`\`\`
+
+          Digest: \`${DIGEST}\`
+
+          This tag is a point-in-time snapshot. Most tools in \`versions.json\` are
+          installed at "latest", so the same tag rebuilt on another day would not
+          produce the same image - pin the digest above if you need one exact image.
+
+          Verify the build provenance:
+
+          \`\`\`
+          gh attestation verify oci://ghcr.io/${{ github.repository }}:${VERSION} -R ${{ github.repository }}
+          \`\`\`
+          EOF
+
+          gh release create "v${VERSION}" \
+            --target "${GITHUB_SHA}" \
+            --title "v${VERSION}" \
+            --notes-file notes.md \
+            sbom.json

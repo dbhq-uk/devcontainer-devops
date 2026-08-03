@@ -1,0 +1,290 @@
+name: build
+
+# Reusable build. Called by ci.yml (pull requests and main) and release.yml
+# (the weekly CalVer release). Everything that touches the image lives here so
+# the two callers stay thin and cannot drift apart.
+#
+# Callers must grant the permissions declared on each job below - a called
+# workflow can only narrow what the caller gives it, never widen it.
+#
+# Actions are pinned to commit SHAs, per GitHub's hardening guidance. The
+# trailing comment is the human-readable tag; update both together.
+
+on:
+  workflow_call:
+    inputs:
+      publish:
+        description: Push the image to GHCR. Pull requests build and test only.
+        type: boolean
+        default: false
+      no-cache:
+        description: Ignore the layer cache, so unpinned tools pick up upstream updates.
+        type: boolean
+        default: false
+      tags:
+        description: docker/metadata-action tag configuration.
+        type: string
+        default: |
+          type=raw,value=main,enable={{is_default_branch}}
+          type=sha,format=short
+    outputs:
+      digest:
+        description: Digest of the published multi-arch manifest.
+        value: ${{ jobs.merge.outputs.digest }}
+      version:
+        description: Primary tag applied to the published image.
+        value: ${{ jobs.merge.outputs.version }}
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+  DOCKERFILE: .devcontainer/Dockerfile
+  BUILD_CONTEXT: .devcontainer
+
+jobs:
+  lint:
+    name: lint
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
+
+      - name: Shell syntax and shellcheck
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          scripts=(
+            .devcontainer/files/install/*.sh
+            .devcontainer/files/entrypoint.sh
+            scripts/*.sh
+            tests/*.sh
+          )
+          for s in "${scripts[@]}"; do
+            bash -n "$s"
+          done
+          # -x so shellcheck follows the sourced _arch.sh helper
+          shellcheck -x -S warning "${scripts[@]}"
+
+      - name: Validate JSON
+        run: |
+          set -euo pipefail
+          # devcontainer.json is deliberately excluded: it is JSONC, and
+          # comments are valid there per the devcontainer spec.
+          while IFS= read -r f; do
+            echo "checking $f"
+            python3 -m json.tool "$f" > /dev/null
+          done < <(find . -name '*.json' -not -path './.git/*' -not -name 'devcontainer.json')
+
+      # Ignores live in .hadolint.yaml, with a reason against each, so this
+      # matches what the pre-commit hook does locally.
+      - name: Lint Dockerfile
+        uses: hadolint/hadolint-action@2a66e89f53d0771bb131a7fa31f3136336094aa6 # v3.4.0
+        with:
+          dockerfile: .devcontainer/Dockerfile
+          config: .hadolint.yaml
+
+  build:
+    name: build (${{ matrix.arch }})
+    needs: lint
+    runs-on: ${{ matrix.runner }}
+    permissions:
+      contents: read
+      packages: write
+      security-events: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: amd64
+            platform: linux/amd64
+            runner: ubuntu-24.04
+          - arch: arm64
+            platform: linux/arm64
+            runner: ubuntu-24.04-arm
+    steps:
+      # The image is several GB and the runner ships with ~14 GB free, which is
+      # not enough for the BuildKit cache plus the loaded image. This reclaims
+      # roughly 25 GB and is the difference between a green build and ENOSPC.
+      - name: Free disk space
+        uses: jlumbroso/free-disk-space@54081f138730dfa15788a46383842cd2f914a1be # v1.3.1
+        with:
+          tool-cache: true
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          docker-images: true
+          swap-storage: false
+
+      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
+
+      - uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0
+
+      - name: Log in to GHCR
+        if: inputs.publish
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Docker metadata
+        id: meta
+        uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: ${{ inputs.tags }}
+
+      # Build once for this architecture and load it locally so the repo's own
+      # test suite can run against the real image before anything is published.
+      # The push step below re-runs the same build, which is a cache hit, so
+      # only the registry export costs anything.
+      - name: Build and load
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
+        with:
+          context: ${{ env.BUILD_CONTEXT }}
+          file: ${{ env.DOCKERFILE }}
+          platforms: ${{ matrix.platform }}
+          target: final
+          load: true
+          tags: devcontainer-devops:test-${{ matrix.arch }}
+          labels: ${{ steps.meta.outputs.labels }}
+          no-cache: ${{ inputs.no-cache }}
+          cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache-${{ matrix.arch }}
+
+      # Runs as vscode because Claude Code lives in that user's ~/.local tree.
+      # --entrypoint "" bypasses entrypoint.sh, which seeds the home volume and
+      # needs root; there is no home volume here.
+      - name: Test image
+        run: |
+          docker run --rm \
+            --entrypoint "" \
+            -u vscode \
+            -v "${{ github.workspace }}/tests:/tests:ro" \
+            devcontainer-devops:test-${{ matrix.arch }} \
+            bash -lc 'export PATH="$HOME/.local/bin:$PATH"; bash /tests/run-all-tests.sh'
+
+      - name: Scan image
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: devcontainer-devops:test-${{ matrix.arch }}
+          # Vulnerability findings are reported, never gating. A devcontainer
+          # bundling the Azure CLI, Ansible and a .NET SDK always carries some
+          # upstream HIGHs; blocking on them would stop the weekly rebuild and
+          # leave the published image staler than the CVEs it is avoiding.
+          exit-code: '0'
+          # secret scanning times out on the large PowerShell module tree
+          scanners: vuln
+          severity: HIGH,CRITICAL
+          timeout: 15m
+          format: sarif
+          output: trivy-${{ matrix.arch }}.sarif
+
+      # Only on publishing runs: security-events: write is not granted to pull
+      # requests from forks, so the upload would fail there.
+      - name: Upload scan results
+        if: inputs.publish
+        uses: github/codeql-action/upload-sarif@d1ba80a13dd99fba24a470575428917156a28b43 # v4.37.5
+        with:
+          sarif_file: trivy-${{ matrix.arch }}.sarif
+          category: trivy-${{ matrix.arch }}
+
+      - name: Push by digest
+        id: push
+        if: inputs.publish
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
+        with:
+          context: ${{ env.BUILD_CONTEXT }}
+          file: ${{ env.DOCKERFILE }}
+          platforms: ${{ matrix.platform }}
+          target: final
+          labels: ${{ steps.meta.outputs.labels }}
+          sbom: true
+          provenance: mode=max
+          cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache-${{ matrix.arch }}
+          cache-to: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache-${{ matrix.arch }},mode=max
+          outputs: type=image,name=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }},push-by-digest=true,name-canonical=true,push=true
+
+      - name: Export digest
+        if: inputs.publish
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/digests
+          digest='${{ steps.push.outputs.digest }}'
+          touch "/tmp/digests/${digest#sha256:}"
+
+      - name: Upload digest
+        if: inputs.publish
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: digest-${{ matrix.arch }}
+          path: /tmp/digests/*
+          if-no-files-found: error
+          retention-days: 1
+
+  merge:
+    name: merge and attest
+    if: inputs.publish
+    needs: build
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      attestations: write
+      artifact-metadata: write
+    outputs:
+      digest: ${{ steps.manifest.outputs.digest }}
+      version: ${{ steps.meta.outputs.version }}
+    steps:
+      - name: Download digests
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          path: /tmp/digests
+          pattern: digest-*
+          merge-multiple: true
+
+      - uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0
+
+      - name: Log in to GHCR
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Docker metadata
+        id: meta
+        uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: ${{ inputs.tags }}
+
+      - name: Create manifest list
+        id: manifest
+        working-directory: /tmp/digests
+        run: |
+          set -euo pipefail
+          # shellcheck disable=SC2046
+          docker buildx imagetools create \
+            $(jq -cr '.target."docker-metadata-action".annotations | map("--annotation " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
+            $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
+            $(printf '${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@sha256:%s ' *)
+
+          digest="$(docker buildx imagetools inspect \
+            "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.version }}" \
+            --format '{{ json .Manifest.Digest }}' | tr -d '"')"
+          echo "digest=${digest}" >> "$GITHUB_OUTPUT"
+          echo "Published ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${digest}"
+
+      # Sigstore-backed SLSA build provenance, pushed to the registry as an OCI
+      # referrer. This is what `gh attestation verify` checks, and it replaces a
+      # separate cosign signing step - actions/attest signs with a short-lived
+      # Sigstore certificate already.
+      - name: Attest build provenance
+        uses: actions/attest@508db95dd578ae2727ebd6217d5ba78e4fbda05d # v4.2.1
+        with:
+          subject-name: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          subject-digest: ${{ steps.manifest.outputs.digest }}
+          push-to-registry: true

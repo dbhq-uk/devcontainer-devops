@@ -5,8 +5,6 @@
 
 # CI/CD
 .github/
-.azuredevops/
-azure-pipelines.yml
 .gitlab-ci.yml
 
 # Documentation
@@ -84,7 +82,7 @@ obj/
 
 # The CA drop-in directory must survive the *.md / *.crt / *.pem excludes above,
 # otherwise the Dockerfile's COPY of files/certs/ has nothing to copy.
-# (Only relevant when building with the repository root as the build context —
-# both devcontainer.json and azure-pipelines.yml use .devcontainer/ as context.)
+# (Only relevant when building with the repository root as the build context -
+# both devcontainer.json and the CI workflows use .devcontainer/ as context.)
 !.devcontainer/files/certs
 !.devcontainer/files/certs/**

@@ -1,0 +1,16 @@
+# hadolint configuration - single source of truth for Dockerfile linting.
+#
+# Used by both the CI lint job (.github/workflows/build.yml) and the local
+# pre-commit hook, so a clean run locally means a clean run in CI.
+
+ignored:
+  # Carried over from the Azure DevOps pipeline's ignore set
+  - DL3008  # unpinned apt packages - this image installs latest by design, see versions.json
+  - DL3009  # apt lists are cleaned in the base and final RUN layers, not in every layer
+  - DL3015  # --no-install-recommends is used where it helps rather than mandated everywhere
+  - DL3059  # consecutive RUN instructions are kept separate deliberately, for layer cacheability
+
+  # Newer rules, picked up when linting moved to GitHub Actions
+  - DL3064  # false positive - ARG USERNAME=vscode is a username, not a secret
+  - DL3066  # USER root / USER vscode are intentional; numeric ids would read worse here
+  - DL3025  # the HEALTHCHECK is shell form on purpose - it needs &&, || and redirection
