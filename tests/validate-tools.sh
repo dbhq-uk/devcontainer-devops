@@ -16,7 +16,7 @@ NC='\033[0m' # No Color
 validate_tool() {
     local tool=$1
     local version_cmd=$2
-    
+
     echo -n "Checking $tool... "
     if command -v $tool &> /dev/null; then
         version=$($version_cmd 2>&1 | head -n 1)

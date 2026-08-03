@@ -25,6 +25,7 @@ Thank you for your interest in contributing! This document provides guidelines a
 
 1. **Fork the repository**
 2. **Create a feature branch**
+
    ```bash
    git checkout -b feature/your-feature-name
    ```
@@ -35,16 +36,18 @@ Thank you for your interest in contributing! This document provides guidelines a
    - Add tests if applicable
 
 4. **Test your changes**
+
    ```bash
    bash tests/validate-tools.sh
    bash tests/integration-test.sh
    ```
 
 5. **Commit your changes**
+
    ```bash
    git commit -m "feat: add new feature"
    ```
-   
+
    Use conventional commit messages:
    - `feat:` New feature
    - `fix:` Bug fix
@@ -54,6 +57,7 @@ Thank you for your interest in contributing! This document provides guidelines a
    - `test:` Test additions/changes
 
 6. **Push to your fork**
+
    ```bash
    git push origin feature/your-feature-name
    ```
@@ -65,11 +69,13 @@ Thank you for your interest in contributing! This document provides guidelines a
 ### Adding New Tools
 
 1. **Create installation script**
+
    ```bash
    files/scripts/install-<tool-name>.sh
    ```
 
 2. **Follow the template:**
+
    ```bash
    #!/bin/bash
    set -e
@@ -98,6 +104,7 @@ Thank you for your interest in contributing! This document provides guidelines a
    - Update in correct order (least to most likely to change)
 
 4. **Add to validation script**
+
    ```bash
    validate_tool "<tool>" "<tool> --version" || ((FAILURES++))
    ```
@@ -241,6 +248,7 @@ artefact - see the README's "Adding New Tools".
 ## 🎉 Recognition
 
 Contributors will be recognized in:
+
 - GitHub contributors list
 - CHANGELOG.md for significant contributions
 

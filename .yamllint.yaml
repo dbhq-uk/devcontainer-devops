@@ -1,0 +1,25 @@
+---
+# yamllint configuration. Auto-discovered by yamllint, so the pre-commit hook
+# needs no inline -d argument and local runs match the hook exactly.
+
+extends: default
+
+rules:
+  line-length:
+    max: 120
+
+  # GitHub Actions workflows conventionally start straight at `name:` with no
+  # `---` marker, and every example in GitHub's own docs does the same.
+  document-start: disable
+
+  # `on:` is the GitHub Actions trigger key. YAML 1.1 reads a bare `on` as the
+  # boolean true, which yamllint then reports as a non-canonical truthy value.
+  # The key is required to be spelled `on`, so exclude keys from the check and
+  # keep it for values.
+  truthy:
+    check-keys: false
+
+  # One space before an inline comment is enough, and is what the pinned-action
+  # comments in the workflows use.
+  comments:
+    min-spaces-from-content: 1

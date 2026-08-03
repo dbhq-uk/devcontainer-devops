@@ -20,6 +20,7 @@ Security vulnerabilities should not be disclosed publicly until a fix is availab
 Send details to: **[your-security-email@example.com]**
 
 Include:
+
 - Description of the vulnerability
 - Steps to reproduce
 - Potential impact
@@ -72,10 +73,11 @@ Include:
 ### Development Practices
 
 1. **Dependencies**
+
    ```bash
    # Verify checksums
    sha256sum -c <checksum-file>
-   
+
    # Pin versions
    pip install package==version
    ```
@@ -103,12 +105,14 @@ Include:
 ### Static Analysis
 
 - **tflint**: Terraform linter and security scanner
+
   ```bash
   tflint --init
   tflint
   ```
 
 - **checkov**: IaC security scanning
+
   ```bash
   checkov -d .
   checkov -f main.tf
@@ -117,6 +121,7 @@ Include:
 ### Secret Management
 
 - **git-crypt**: Transparent file encryption
+
   ```bash
   git-crypt init
   git-crypt add-gpg-user <key-id>
@@ -125,6 +130,7 @@ Include:
 ### Recommended Additional Tools
 
 Consider adding:
+
 - **trivy**: Container vulnerability scanner
 - **SOPS**: Secrets encryption
 - **Vault**: HashiCorp Vault for secret management
@@ -195,6 +201,7 @@ trivy image --scanners vuln --severity HIGH,CRITICAL \
 ### Industry Standards
 
 This container aims to support:
+
 - CIS Docker Benchmarks
 - NIST Cybersecurity Framework
 - SOC 2 compliance requirements

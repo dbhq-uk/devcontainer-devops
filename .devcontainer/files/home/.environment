@@ -45,25 +45,25 @@ if [ -n "$BASH_VERSION" ]; then
     # Bash completions
     source <(kubectl completion bash)
     complete -F __start_kubectl k
-    
+
     source <(helm completion bash)
     complete -F __start_helm h
-    
+
     complete -C /usr/local/bin/terraform terraform
     complete -C /usr/local/bin/terraform tf
-    
+
     source /etc/bash_completion.d/azure-cli 2>/dev/null || true
 elif [ -n "$ZSH_VERSION" ]; then
     # Zsh completions
     autoload -Uz compinit
     compinit
-    
+
     source <(kubectl completion zsh)
     compdef __start_kubectl k
-    
+
     source <(helm completion zsh)
     compdef __start_helm h
-    
+
     complete -o nospace -C /usr/local/bin/terraform terraform
     complete -o nospace -C /usr/local/bin/terraform tf
 fi
@@ -83,5 +83,3 @@ export NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
 
 # Path additions
 export PATH="$HOME/.local/bin:$PATH"
-
-

@@ -1,0 +1,9 @@
+{
+  "_comment": "markdownlint rules for this repo. See https://github.com/DavidAnson/markdownlint/blob/main/doc/Rules.md",
+
+  "MD013": false,
+
+  "MD024": { "siblings_only": true },
+
+  "MD033": { "allowed_elements": ["br"] }
+}

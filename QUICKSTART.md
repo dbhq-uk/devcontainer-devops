@@ -28,6 +28,7 @@ code .
 When prompted, click **"Reopen in Container"**
 
 Or manually:
+
 - Press `F1` or `Ctrl+Shift+P`
 - Type: `Dev Containers: Reopen in Container`
 - Press Enter
@@ -54,14 +55,14 @@ This checks all tools are installed correctly.
 
 ## What's Included?
 
-✅ Terraform & Terragrunt  
-✅ Azure CLI  
-✅ Docker & Kubernetes (kubectl, helm)  
-✅ Ansible  
-✅ PowerShell 7  
-✅ Python 3 with DevOps tools  
-✅ Security scanners (tflint, checkov)  
-✅ Data tools (jq, yq)  
+✅ Terraform & Terragrunt
+✅ Azure CLI
+✅ Docker & Kubernetes (kubectl, helm)
+✅ Ansible
+✅ PowerShell 7
+✅ Python 3 with DevOps tools
+✅ Security scanners (tflint, checkov)
+✅ Data tools (jq, yq)
 
 ## Common Commands
 
@@ -97,12 +98,14 @@ testall
 ## Troubleshooting
 
 ### Container won't start
+
 ```bash
 # Rebuild without cache
 F1 → Dev Containers: Rebuild Container Without Cache
 ```
 
 ### Tools not found
+
 ```bash
 # Verify PATH
 echo $PATH
@@ -112,6 +115,7 @@ source ~/.bashrc
 ```
 
 ### Permission issues
+
 ```bash
 # Fix workspace permissions
 sudo chown -R vscode:vscode /workspace

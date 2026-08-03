@@ -37,7 +37,8 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
+  # Full image reference, used everywhere except the login step
+  IMAGE: ghcr.io/${{ github.repository }}
   DOCKERFILE: .devcontainer/Dockerfile
   BUILD_CONTEXT: .devcontainer
 
@@ -133,7 +134,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          images: ${{ env.IMAGE }}
           tags: ${{ inputs.tags }}
 
       # Build once for this architecture and load it locally so the repo's own
@@ -151,7 +152,7 @@ jobs:
           tags: devcontainer-devops:test-${{ matrix.arch }}
           labels: ${{ steps.meta.outputs.labels }}
           no-cache: ${{ inputs.no-cache }}
-          cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache-${{ matrix.arch }}
+          cache-from: type=registry,ref=${{ env.IMAGE }}:buildcache-${{ matrix.arch }}
 
       # Runs as vscode because Claude Code lives in that user's ~/.local tree.
       # --entrypoint "" bypasses entrypoint.sh, which seeds the home volume and
@@ -202,9 +203,9 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           sbom: true
           provenance: mode=max
-          cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache-${{ matrix.arch }}
-          cache-to: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache-${{ matrix.arch }},mode=max
-          outputs: type=image,name=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }},push-by-digest=true,name-canonical=true,push=true
+          cache-from: type=registry,ref=${{ env.IMAGE }}:buildcache-${{ matrix.arch }}
+          cache-to: type=registry,ref=${{ env.IMAGE }}:buildcache-${{ matrix.arch }},mode=max
+          outputs: type=image,name=${{ env.IMAGE }},push-by-digest=true,name-canonical=true,push=true
 
       - name: Export digest
         if: inputs.publish
@@ -258,7 +259,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          images: ${{ env.IMAGE }}
           tags: ${{ inputs.tags }}
 
       - name: Create manifest list
@@ -266,17 +267,23 @@ jobs:
         working-directory: /tmp/digests
         run: |
           set -euo pipefail
-          # shellcheck disable=SC2046
-          docker buildx imagetools create \
-            $(jq -cr '.target."docker-metadata-action".annotations | map("--annotation " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
-            $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
-            $(printf '${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@sha256:%s ' *)
+          annotations="$(jq -cr \
+            '.target."docker-metadata-action".annotations
+             | map("--annotation " + .) | join(" ")' \
+            <<< "$DOCKER_METADATA_OUTPUT_JSON")"
+          tags="$(jq -cr '.tags | map("-t " + .) | join(" ")' \
+            <<< "$DOCKER_METADATA_OUTPUT_JSON")"
+
+          # Word splitting is deliberate: these hold whole argument lists
+          # shellcheck disable=SC2046,SC2086
+          docker buildx imagetools create $annotations $tags \
+            $(printf '${{ env.IMAGE }}@sha256:%s ' *)
 
           digest="$(docker buildx imagetools inspect \
-            "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.version }}" \
+            "${{ env.IMAGE }}:${{ steps.meta.outputs.version }}" \
             --format '{{ json .Manifest.Digest }}' | tr -d '"')"
           echo "digest=${digest}" >> "$GITHUB_OUTPUT"
-          echo "Published ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${digest}"
+          echo "Published ${{ env.IMAGE }}@${digest}"
 
       # Sigstore-backed SLSA build provenance, pushed to the registry as an OCI
       # referrer. This is what `gh attestation verify` checks, and it replaces a
@@ -285,6 +292,6 @@ jobs:
       - name: Attest build provenance
         uses: actions/attest@508db95dd578ae2727ebd6217d5ba78e4fbda05d # v4.2.1
         with:
-          subject-name: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          subject-name: ${{ env.IMAGE }}
           subject-digest: ${{ steps.manifest.outputs.digest }}
           push-to-registry: true

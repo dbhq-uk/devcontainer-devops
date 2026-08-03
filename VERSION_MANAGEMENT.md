@@ -19,6 +19,7 @@ By default, when you build the container without specifying versions, it will au
 ## How It Works
 
 Each installation script checks if a version is provided:
+
 - **No version**: Fetches latest from official source (GitHub API, PyPI, etc.)
 - **Version provided**: Installs that specific version
 
@@ -79,6 +80,7 @@ point-in-time snapshot rather than a reproducible build.
 ### Inside the Container
 
 Run validation to see installed versions:
+
 ```bash
 validate
 ```
@@ -86,11 +88,13 @@ validate
 ### Before Building
 
 Check what latest versions are available:
+
 ```bash
 bash scripts/check-latest-versions.sh
 ```
 
 This will:
+
 - Fetch all latest versions
 - Show current versions in your config
 - Provide ready-to-use configuration
@@ -98,7 +102,9 @@ This will:
 ## Version Strategy Recommendations
 
 ### Development Environment
+
 ✅ **Use latest versions** for maximum features and security patches
+
 ```json
 "args": {
     "UBUNTU_VERSION": "24.04"
@@ -107,7 +113,9 @@ This will:
 ```
 
 ### CI/CD Pipelines
+
 ⚠️ **Pin versions** for reproducibility
+
 ```json
 "args": {
     "UBUNTU_VERSION": "24.04",
@@ -118,7 +126,9 @@ This will:
 ```
 
 ### Production Support
+
 🔒 **Pin all versions** for stability
+
 ```json
 "args": {
     "UBUNTU_VERSION": "24.04",
@@ -142,6 +152,7 @@ This will:
 ### Regular Updates (Monthly Recommended)
 
 1. **Check for updates:**
+
    ```bash
    bash scripts/check-latest-versions.sh
    ```
@@ -149,11 +160,13 @@ This will:
 2. **Update configuration** with new versions if desired
 
 3. **Rebuild container:**
-   ```
+
+   ```text
    Dev Containers: Rebuild Container
    ```
 
 4. **Test thoroughly:**
+
    ```bash
    validate
    testall
@@ -166,16 +179,19 @@ This will:
 If a critical security patch is released:
 
 1. **Pin to secure version** in devcontainer.json:
+
    ```json
    "TERRAFORM_VERSION": "1.13.6"  // Security patch
    ```
 
 2. **Rebuild immediately:**
-   ```
+
+   ```text
    Dev Containers: Rebuild Container Without Cache
    ```
 
 3. **Verify:**
+
    ```bash
    terraform version
    ```
@@ -214,12 +230,14 @@ Always test after updates!
 ## Troubleshooting
 
 ### Version fetch fails during build
+
 ```bash
 # Fallback: The script will use hardcoded defaults
 # Or manually specify version in devcontainer.json
 ```
 
 ### Incompatible versions
+
 ```bash
 # Pin to known-good versions
 "TERRAFORM_VERSION": "1.13.5",
@@ -227,6 +245,7 @@ Always test after updates!
 ```
 
 ### Slow builds
+
 ```bash
 # Version fetching adds ~30s to build
 # Pin versions to skip API calls
@@ -235,6 +254,7 @@ Always test after updates!
 ## Best Practices
 
 ✅ **DO:**
+
 - Use latest versions in development
 - Pin versions in CI/CD
 - Test after each update
@@ -242,6 +262,7 @@ Always test after updates!
 - Check release notes before updating
 
 ❌ **DON'T:**
+
 - Auto-update in production
 - Skip testing after updates
 - Mix latest and pinned randomly
@@ -250,6 +271,7 @@ Always test after updates!
 ## Examples
 
 ### Pure Latest (Development)
+
 ```json
 "args": {
     "UBUNTU_VERSION": "24.04"
@@ -257,6 +279,7 @@ Always test after updates!
 ```
 
 ### Mixed (Flexible Development)
+
 ```json
 "args": {
     "UBUNTU_VERSION": "24.04",
@@ -266,6 +289,7 @@ Always test after updates!
 ```
 
 ### Fully Pinned (Production)
+
 ```json
 "args": {
     "UBUNTU_VERSION": "24.04",

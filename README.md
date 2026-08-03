@@ -56,7 +56,7 @@ This devcontainer includes pre-configured tools for:
 
 ## 🏗️ Repository Structure
 
-```
+```text
 devcontainer-devops/
 ├── .github/
 │   └── workflows/
@@ -132,12 +132,14 @@ devcontainer-devops/
 ### Quick Start
 
 1. **Clone the repository:**
+
    ```bash
    git clone https://github.com/grinidx/devcontainer-devops.git
    cd devcontainer-devops
    ```
 
 2. **Open in VS Code:**
+
    ```bash
    code .
    ```
@@ -331,6 +333,7 @@ builds from the local `Dockerfile` by default — to pin, add the versions to it
 ## 📝 Usage Examples
 
 ### Terraform
+
 ```bash
 terraform init
 terraform plan
@@ -338,6 +341,7 @@ terraform apply
 ```
 
 ### Azure CLI
+
 ```bash
 az login
 az account list
@@ -345,6 +349,7 @@ az group create --name myResourceGroup --location eastus
 ```
 
 ### Docker
+
 ```bash
 docker ps
 docker build -t myimage .
@@ -352,12 +357,14 @@ docker run myimage
 ```
 
 ### Helm & Kubernetes
+
 ```bash
 kubectl get pods
 helm install myrelease mychart/
 ```
 
 ### AI Tooling
+
 ```bash
 claude                  # start Claude Code
 codex-init              # one-off: configure Codex endpoint and deployment
@@ -382,21 +389,25 @@ MIT - see [`LICENSE`](LICENSE).
 ## 🐛 Troubleshooting
 
 ### Container won't build
+
 - Ensure Docker Desktop is running
 - Check Docker has sufficient resources (CPU/Memory)
 - Try rebuilding without cache: `Dev Containers: Rebuild Container`
 
 ### Permission issues in /workspace
+
 - The `postCreateCommand` should handle this automatically
 - Manually run: `sudo chown -R vscode:vscode /workspace`
 
 ### Tool not found
+
 - Verify the installation script exists in `.devcontainer/files/install/`
 - Check the `Dockerfile` has a `RUN /tmp/install/install-<tool>.sh` step
 - Confirm it appears in `tests/validate-tools.sh`, then run that script
 - Rebuild the container
 
 ### A home-directory tool is missing or stale after a rebuild
+
 `/home/vscode` is a persistent per-user volume, seeded from the image only on
 first start. Anything installed into the home tree (Claude Code, for example)
 will not refresh for an existing volume. Remove the `dev-home-<user>` volume to

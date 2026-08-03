@@ -11,6 +11,9 @@ repos:
       - id: check-yaml
         args: ['--unsafe']
       - id: check-json
+        # devcontainer.json is JSONC - comments are valid there per the
+        # devcontainer spec, so a strict JSON parser rejects it
+        exclude: ^\.devcontainer/devcontainer\.json$
       - id: check-added-large-files
         args: ['--maxkb=1000']
       - id: check-merge-conflict
@@ -25,7 +28,13 @@ repos:
     rev: v0.9.0.6
     hooks:
       - id: shellcheck
-        args: ['-x']
+        # -x follows sourced files (_arch.sh); -S warning matches the CI lint
+        # job exactly, so a clean run here means a clean run there
+        args: ['-x', '-S', 'warning']
+        # The home/ files are shell fragments sourced into an interactive
+        # shell, not standalone scripts - no shebang, and deliberately full of
+        # variables consumed by the shell rather than by them
+        exclude: ^\.devcontainer/files/home/
 
   # Terraform checks
   - repo: https://github.com/antonbabenko/pre-commit-terraform
@@ -45,12 +54,11 @@ repos:
           - --args=--quiet
           - --args=--framework terraform
 
-  # Ansible linting
-  - repo: https://github.com/ansible/ansible-lint
-    rev: v6.22.1
-    hooks:
-      - id: ansible-lint
-        files: \.(yaml|yml)$
+  # NOTE: there is no ansible-lint hook here on purpose. This repository ships
+  # Ansible inside the image but contains no playbooks or roles of its own, and
+  # the hook's `files: \.(yaml|yml)$` pattern pointed it at the GitHub workflow
+  # files, linting CI config as though it were Ansible. Add it back scoped to a
+  # real playbook directory if one ever lands.
 
   # Python checks
   - repo: https://github.com/psf/black
@@ -72,19 +80,18 @@ repos:
       # Ignores come from .hadolint.yaml so this matches CI exactly
       - id: hadolint-docker
 
-  # Markdown linting
+  # Markdown linting - rules in .markdownlint.json
   - repo: https://github.com/igorshubovych/markdownlint-cli
     rev: v0.38.0
     hooks:
       - id: markdownlint
         args: ['--fix']
 
-  # YAML linting
+  # YAML linting - rules in .yamllint.yaml, which yamllint auto-discovers
   - repo: https://github.com/adrienverge/yamllint
     rev: v1.33.0
     hooks:
       - id: yamllint
-        args: ['-d', '{extends: default, rules: {line-length: {max: 120}}}']
 
   # Secret detection
   - repo: https://github.com/Yelp/detect-secrets

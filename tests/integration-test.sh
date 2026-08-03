@@ -23,7 +23,7 @@ cd $TEST_DIR
 run_test() {
     local test_name=$1
     local test_cmd=$2
-    
+
     echo -n "Testing: $test_name... "
     if eval $test_cmd &> /dev/null; then
         echo -e "${GREEN}✓ PASS${NC}"
