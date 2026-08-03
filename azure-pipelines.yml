@@ -11,24 +11,43 @@ schedules:
     always: true
     batch: true
 
+# Replace with your own agent pool, or use 'vmImage: ubuntu-latest' for
+# Microsoft-hosted agents (note the 120-minute job timeouts below).
 pool:
-  name: your-agent-pool
+  name: '<your-agent-pool>'
 
 variables:
-  dockerfilePath: '.devcontainer/Dockerfile'
-  imageRepository: 'example/devcontainer'
-  containerRegistry: 'your-registry.azurecr.io'
-  containerRegistryConnection: 'your-registry'
-  tag: '$(Build.BuildId)'
-  majorVersion: '1'
-  minorVersion: '0'
-  patchVersion: '$(Build.BuildId)'
-  semanticVersion: '$(majorVersion).$(minorVersion).$(patchVersion)'
+  # Variable group supplying Dependency_track_URL and Dependency_track_API_KEY.
+  # Remove this line and the 'Upload SBOM to Dependency-Track' task if you do
+  # not run a Dependency-Track instance.
+  - group: Dependency_track
+  - name: dockerfilePath
+    value: '.devcontainer/Dockerfile'
+  - name: imageRepository
+    value: 'devcontainer'
+  # Your registry login server, e.g. 'myregistry.azurecr.io'
+  - name: containerRegistry
+    value: '<your-registry>.azurecr.io'
+  # Name of the Docker Registry service connection in Azure DevOps
+  - name: containerRegistryConnection
+    value: '<your-registry-service-connection>'
+  - name: tag
+    value: '$(Build.BuildId)'
+  - name: majorVersion
+    value: '1'
+  - name: minorVersion
+    value: '0'
+  - name: patchVersion
+    value: '$(Build.BuildId)'
+  - name: semanticVersion
+    value: '$(majorVersion).$(minorVersion).$(patchVersion)'
   # Use --no-cache on scheduled builds to pick up upstream updates
-  ${{ if eq(variables['Build.Reason'], 'Schedule') }}:
-    buildArgs: '--no-cache --build-arg BUILDKIT_INLINE_CACHE=1'
-  ${{ else }}:
-    buildArgs: '--build-arg BUILDKIT_INLINE_CACHE=1 --cache-from $(containerRegistry)/$(imageRepository):latest'
+  - ${{ if eq(variables['Build.Reason'], 'Schedule') }}:
+    - name: buildArgs
+      value: '--no-cache --build-arg BUILDKIT_INLINE_CACHE=1'
+  - ${{ else }}:
+    - name: buildArgs
+      value: '--build-arg BUILDKIT_INLINE_CACHE=1 --cache-from $(containerRegistry)/$(imageRepository):latest'
 
 stages:
 - stage: Validate
@@ -144,6 +163,7 @@ stages:
             echo '=== Ansible ===' && ansible --version
             echo '=== PowerShell ===' && pwsh --version
             echo '=== Python ===' && python3 --version
+            echo '=== .NET SDK ===' && dotnet --version && dotnet --list-sdks
             echo '=== tflint ===' && tflint --version
             echo '=== checkov ===' && checkov --version
             echo '=== yq ===' && yq --version
@@ -185,6 +205,20 @@ stages:
           # --timeout 15m: allow extra time for large devcontainer image
           trivy image --scanners vuln --timeout 15m --severity HIGH,CRITICAL --exit-code 0 $(containerRegistry)/$(imageRepository):$(tag)
 
+    - task: Bash@3
+      displayName: 'Generate SBOM'
+      inputs:
+        targetType: 'inline'
+        script: |
+          trivy image --format cyclonedx --output $(System.DefaultWorkingDirectory)/sbom.json $(containerRegistry)/$(imageRepository):$(tag) --timeout 15m
+
+    - task: PublishBuildArtifacts@1
+      displayName: 'Publish SBOM'
+      inputs:
+        PathtoPublish: '$(System.DefaultWorkingDirectory)/sbom.json'
+        ArtifactName: 'sbom'
+        publishLocation: 'Container'
+
 - stage: Push
   displayName: 'Push to Registry'
   dependsOn: SecurityScan
@@ -206,6 +240,24 @@ stages:
           latest
           $(tag)
           $(semanticVersion)
+
+    - task: DownloadBuildArtifacts@1
+      displayName: 'Download SBOM'
+      inputs:
+        buildType: 'current'
+        downloadType: 'single'
+        artifactName: 'sbom'
+        downloadPath: '$(System.DefaultWorkingDirectory)'
+
+    - task: upload-bom-dtrack-task@1
+      displayName: 'Upload SBOM to Dependency-Track'
+      inputs:
+        bomFilePath: '$(System.DefaultWorkingDirectory)/sbom/sbom.json'
+        dtrackProjAutoCreate: true
+        dtrackAPIKey: $(Dependency_track_API_KEY)
+        dtrackURI: $(Dependency_track_URL)
+        dtrackProjName: $(Build.Repository.Name)
+        dtrackProjVersion: $(Build.BuildNumber)
 
     - task: Bash@3
       displayName: 'Build summary'

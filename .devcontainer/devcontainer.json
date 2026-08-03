@@ -1,29 +1,29 @@
 {
-    // Option 1: Use pre-built image from Azure Container Registry
-    // Requires: az acr login --name xxx
-    // docker login xxx.azurecr.io -u xxx -p <password>
+    // Option 1: Build from the local Dockerfile (default)
+    "build": {
+        "dockerfile": "Dockerfile",
+        "context": "",
+        "target": "final",
+        "args": {
+            "UBUNTU_VERSION": "24.04"
+            // Leave versions empty to install latest automatically
+            // Or specify versions to pin, e.g.:
+            // "TERRAFORM_VERSION": "1.13.5",
+            // "KUBECTL_VERSION": "1.34.2",
+            // "HELM_VERSION": "4.0.0"
+        }
+    },
 
-    "image": "xxx.xxx/devcontainer:latest",
-
-    // Option 2: Build from local Dockerfile
-    // Uncomment the section below and comment out "image" above to build locally
-    
-    // "build": {
-    //     "dockerfile": "Dockerfile",
-    //     "context": "",
-    //     "target": "final",
-    //     "args": {
-    //         "UBUNTU_VERSION": "24.04"
-    //         // Leave versions empty to install latest automatically
-    //         // Or specify versions to pin, e.g.:
-    //         // "TERRAFORM_VERSION": "1.13.5",
-    //         // "KUBECTL_VERSION": "1.34.2",
-    //         // "HELM_VERSION": "4.0.0"
-    //     }
-    // },
-
+    // Option 2: Use a pre-built image from your own container registry.
+    // Comment out the "build" block above, then uncomment and edit the line
+    // below. For Azure Container Registry, sign in first with:
+    //     az acr login --name <your-registry>
+    // "image": "<your-registry>.azurecr.io/devcontainer:latest",
     "remoteUser": "vscode",
-    "runArgs": ["--network=host"],
+    "runArgs": [
+        "--network=host",
+        "--privileged"
+    ],
     "mounts": [
         "source=${localWorkspaceFolder},target=/workspace/devcontainer,type=bind,consistency=cached",
         "type=volume,source=dev-home-${localEnv:USER},target=/home/vscode"
@@ -32,12 +32,13 @@
     "workspaceFolder": "/workspace",
     "postCreateCommand": "bash -c 'echo \"127.0.0.1 $(hostname)\" | sudo tee -a /etc/hosts > /dev/null' && sudo chown -R vscode:vscode /workspace && sudo chown -R vscode:vscode /home/vscode || true",
     "postStartCommand": "sudo /usr/local/bin/entrypoint.sh",
-
     "containerEnv": {
         "NODE_OPTIONS": "--max-old-space-size=4096",
-        "CLAUDE_CONFIG_DIR": "/home/vscode/.claude"
+        "CLAUDE_CONFIG_DIR": "/home/vscode/.claude",
+        "REQUESTS_CA_BUNDLE": "/etc/ssl/certs/ca-certificates.crt",
+        "SSL_CERT_FILE": "/etc/ssl/certs/ca-certificates.crt",
+        "NODE_EXTRA_CA_CERTS": "/etc/ssl/certs/ca-certificates.crt"
     },
-
     "customizations": {
         "vscode": {
             "extensions": [
@@ -45,6 +46,8 @@
                 "hashicorp.terraform",
                 "ms-vscode.azurecli",
                 "ms-vscode.powershell",
+                "ms-dotnettools.csharp",
+                "ms-dotnettools.csdevkit",
                 "redhat.ansible",
                 "ms-python.python",
                 "ms-python.vscode-pylance",
@@ -62,7 +65,10 @@
                 "charliermarsh.ruff",
                 "timonwong.shellcheck",
                 "streetsidesoftware.code-spell-checker",
-                "anthropic.claude-code"
+                "anthropic.claude-code",
+                "GitHub.copilot",
+                "GitHub.copilot-chat",
+                "openai.chatgpt"
             ],
             "settings": {
                 "terminal.integrated.defaultProfile.linux": "zsh",
@@ -112,7 +118,8 @@
                 "[python]": {
                     "editor.defaultFormatter": "ms-python.python",
                     "editor.formatOnSave": true
-                }
+                },
+                "remote.autoForwardPortsSource": "output"
             }
         }
     }

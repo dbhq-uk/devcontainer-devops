@@ -99,6 +99,12 @@ NODE_LATEST=$(curl -s https://nodejs.org/dist/index.json | jq -r '[.[] | select(
 echo -e "  Latest LTS: ${GREEN}${NODE_LATEST}${NC}"
 echo ""
 
+# .NET SDK (pinned to the 10.0 LTS channel)
+echo -e "${BLUE}.NET SDK (10.0 LTS channel):${NC}"
+DOTNET_LATEST=$(curl -s https://builds.dotnet.microsoft.com/dotnet/release-metadata/releases-index.json | jq -r '."releases-index"[] | select(."channel-version"=="10.0") | ."latest-sdk"' 2>/dev/null || true)
+echo -e "  Latest: ${GREEN}${DOTNET_LATEST:-unknown}${NC}"
+echo ""
+
 # Claude Code
 echo -e "${BLUE}Claude Code:${NC}"
 CLAUDE_LATEST=$(curl -s https://registry.npmjs.org/@anthropic-ai/claude-code/latest | jq -r '.version')
@@ -111,7 +117,7 @@ echo "=================================="
 cat << EOF
 
 "args": {
-    "UBUNTU_VERSION": "22.04",
+    "UBUNTU_VERSION": "24.04",
     "TERRAFORM_VERSION": "${TF_LATEST}",
     "TERRAGRUNT_VERSION": "${TG_LATEST}",
     "KUBECTL_VERSION": "${KUBECTL_LATEST}",
@@ -119,6 +125,7 @@ cat << EOF
     "AZ_CLI_VERSION": "${AZ_LATEST}",
     "ANSIBLE_VERSION": "${ANSIBLE_LATEST}",
     "POWERSHELL_VERSION": "${PWSH_LATEST}",
+    "DOTNET_VERSION": "10.0",
     "KUBELOGIN_VERSION": "${KUBELOGIN_LATEST}",
     "YQ_VERSION": "${YQ_LATEST}",
     "JQ_VERSION": "${JQ_LATEST}",

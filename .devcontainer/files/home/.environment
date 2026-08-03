@@ -74,6 +74,13 @@ export ANSIBLE_NOCOWS=1
 # Do NOT carry this setting into production environments.
 export ANSIBLE_HOST_KEY_CHECKING=False
 
+# CA trust — covers Python (requests/ssl), curl, and Node.js.
+# Any extra CAs baked in from .devcontainer/files/certs/ are already merged into
+# this bundle by update-ca-certificates at build time.
+export REQUESTS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt
+export SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
+export NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
+
 # Path additions
 export PATH="$HOME/.local/bin:$PATH"
 

@@ -70,14 +70,18 @@ echo ""
 echo "Programming Languages:"
 validate_tool "python3" "python3 --version" || ((FAILURES++))
 validate_tool "pip3" "pip3 --version" || ((FAILURES++))
+validate_tool "uv" "uv --version" || ((FAILURES++))
+validate_tool "uvx" "uvx --version" || ((FAILURES++))
 validate_tool "pwsh" "pwsh --version" || ((FAILURES++))
 validate_tool "node" "node --version" || ((FAILURES++))
 validate_tool "npm" "npm --version" || ((FAILURES++))
+validate_tool "dotnet" "dotnet --version" || ((FAILURES++))
 echo ""
 
 # AI Tools
 echo "AI Tools:"
 validate_tool "claude" "claude --version" || ((FAILURES++))
+validate_tool "cswap" "cswap --version" || ((FAILURES++))
 echo ""
 
 # Security Tools

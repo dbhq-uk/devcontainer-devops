@@ -1,0 +1,25 @@
+model = "${CODEX_DEPLOYMENT}"
+model_provider = "azure_entra"
+model_reasoning_effort = "high"
+
+[model_providers.azure_entra]
+name = "Azure OpenAI via Entra"
+base_url = "${CODEX_ENDPOINT}/openai/v1"
+wire_api = "responses"
+
+[model_providers.azure_entra.auth]
+command = "az"
+args = [
+    "account", "get-access-token",
+    "--resource", "https://cognitiveservices.azure.com",
+    "--query", "accessToken",
+    "-o", "tsv",
+]
+timeout_ms = 10000
+refresh_interval_ms = 300000
+
+[projects."/workspace"]
+trust_level = "trusted"
+
+[plugins."github@openai-curated"]
+enabled = true

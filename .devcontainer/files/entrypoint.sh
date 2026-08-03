@@ -16,4 +16,9 @@ if [ ! -e /home/vscode/.initialized ]; then
     chown -R vscode:vscode /home/vscode
 fi
 
+# Clean up terraform/terragrunt caches on every start
+echo "Cleaning terraform and terragrunt caches..."
+find /home/vscode/.terragrunt-cache -mindepth 1 -maxdepth 1 -exec rm -rf {} + 2>/dev/null || true
+find /home/vscode/.terraform.d/plugin-cache/registry.terraform.io -mindepth 1 -maxdepth 1 -exec rm -rf {} + 2>/dev/null || true
+
 exec "$@"

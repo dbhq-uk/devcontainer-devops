@@ -13,6 +13,7 @@ By default, when you build the container without specifying versions, it will au
 - ✅ Azure CLI (latest)
 - ✅ PowerShell (latest)
 - ✅ Ansible (latest)
+- ✅ .NET SDK (latest on the 10.0 LTS channel; set `DOTNET_VERSION` to pin an exact SDK)
 - ✅ All other tools...
 
 ## How It Works
@@ -179,10 +180,13 @@ If a critical security patch is released:
 | PowerShell | GitHub Releases | `https://api.github.com/repos/PowerShell/PowerShell/releases/latest` |
 | Ansible | PyPI | `https://pypi.org/pypi/ansible/json` |
 | Checkov | PyPI | `https://pypi.org/pypi/checkov/json` |
+| claude-swap (cswap) | PyPI | `https://pypi.org/pypi/claude-swap/json` |
 | yq | GitHub Releases | `https://api.github.com/repos/mikefarah/yq/releases/latest` |
 | jq | GitHub Releases | `https://api.github.com/repos/jqlang/jq/releases/latest` |
 | tflint | GitHub Releases | `https://api.github.com/repos/terraform-linters/tflint/releases/latest` |
 | kubelogin | GitHub Releases | `https://api.github.com/repos/Azure/kubelogin/releases/latest` |
+| uv | GitHub Releases | `https://api.github.com/repos/astral-sh/uv/releases/latest` (tags have **no** `v` prefix) |
+| .NET SDK | Microsoft dotnet-install.sh | `https://dot.net/v1/dotnet-install.sh` (channel 10.0) |
 
 ## Compatibility Matrix
 

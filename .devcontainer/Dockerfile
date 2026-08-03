@@ -13,8 +13,13 @@ ARG TFLINT_VERSION=
 ARG TF_SUMMARIZE_VERSION=
 ARG CHECKOV_VERSION=
 ARG NODE_VERSION=
+ARG DOTNET_VERSION=
 ARG AZCOPY_VERSION=
 ARG CLAUDE_CODE_VERSION=
+ARG CODEX_VERSION=
+ARG CSWAP_VERSION=
+ARG GITLEAKS_VERSION=
+ARG UV_VERSION=
 FROM mcr.microsoft.com/devcontainers/base:ubuntu-${UBUNTU_VERSION} AS final
 
 ARG USERNAME=vscode
@@ -30,7 +35,12 @@ ARG TF_SUMMARIZE_VERSION
 ARG AZCOPY_VERSION
 ARG CHECKOV_VERSION
 ARG NODE_VERSION
+ARG DOTNET_VERSION
 ARG CLAUDE_CODE_VERSION
+ARG CODEX_VERSION
+ARG CSWAP_VERSION
+ARG GITLEAKS_VERSION
+ARG UV_VERSION
 
 # Install base packages
 ARG PKGS="\
@@ -44,7 +54,24 @@ ARG PKGS="\
     jq \
     ca-certificates \
     iputils-ping \
+    dnsutils \
+    postgresql-client \
+    cifs-utils \
+    gettext-base \
     "
+
+# Trust any extra CA certificates dropped into files/certs/ (see the README there).
+# The directory may hold nothing but the README, in which case only the public
+# roots from the base image are trusted and the build still succeeds.
+# REQUESTS_CA_BUNDLE / SSL_CERT_FILE cover Python (az, ansible, checkov, etc.) and
+# curl; Node.js ignores the system store, so NODE_EXTRA_CA_CERTS points it at the
+# merged bundle explicitly.
+COPY files/certs/ /usr/local/share/ca-certificates/extra/
+RUN chmod -R a+r /usr/local/share/ca-certificates/extra && \
+    update-ca-certificates
+ENV REQUESTS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt \
+    SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt \
+    NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
 
 # Allow system-wide pip installs (PEP 668 on Ubuntu 24.04+)
 # Safe in a devcontainer where system Python is the intended target
@@ -86,10 +113,48 @@ RUN /tmp/install/install-powershell.sh ${POWERSHELL_VERSION}
 
 RUN /tmp/install/install-yq.sh ${YQ_VERSION} && \
     /tmp/install/install-git-crypt.sh && \
-    /tmp/install/install-pre-commit.sh
+    /tmp/install/install-pre-commit.sh && \
+    /tmp/install/install-gitleaks.sh ${GITLEAKS_VERSION}
 
 RUN /tmp/install/install-node.sh ${NODE_VERSION} && \
-    /tmp/install/install-claude-code.sh ${CLAUDE_CODE_VERSION}
+    /tmp/install/install-codex.sh ${CODEX_VERSION}
+
+# .NET SDK: system-wide install dir, dev-friendly defaults, and ~/.dotnet/tools
+# (per-user global tools) on PATH so `dotnet tool install -g` works out of the box.
+ENV DOTNET_ROOT=/usr/share/dotnet \
+    DOTNET_CLI_TELEMETRY_OPTOUT=1 \
+    DOTNET_NOLOGO=1 \
+    PATH="${PATH}:/usr/share/dotnet:/home/${USERNAME}/.dotnet/tools"
+RUN /tmp/install/install-dotnet.sh ${DOTNET_VERSION}
+
+# uv: fast Python package/project manager. Installed for interactive use only —
+# nothing in this image is installed through it yet, so it deliberately sits
+# late, where a version bump costs no cached layers. Migrating the first tool to
+# `uv tool install` means moving this RUN above that tool's own.
+RUN /tmp/install/install-uv.sh ${UV_VERSION}
+
+# claude-swap (`cswap`): Claude Code multi-account switcher. Installed
+# system-wide rather than into ~/.local because /home/vscode is a named volume
+# only seeded from /tmp-home on first start — a home-tree install would go
+# stale for anyone with a pre-existing volume.
+RUN /tmp/install/install-cswap.sh ${CSWAP_VERSION}
+
+# Claude Code is installed natively (not via npm -g) into the vscode user's
+# ~/.local tree so that auto-updates work without sudo. It must run as the
+# vscode user (with HOME set explicitly — the USER instruction does not set
+# HOME) and before the /tmp-home snapshot below, so the install is seeded into
+# the home volume on first container start.
+USER ${USERNAME}
+RUN HOME=/home/${USERNAME} /tmp/install/install-claude-code.sh ${CLAUDE_CODE_VERSION}
+USER root
+
+# Codex bootstrap: ships a config template + interactive init script.
+# Users run `codex-init` manually to be prompted for endpoint URL and deployment
+# name; values are saved to ~/.config/codex-bootstrap.env and ~/.codex/config.toml is rendered.
+COPY ./files/codex/config.toml.tmpl /usr/local/share/codex/config.toml.tmpl
+COPY ./files/codex/codex-init /usr/local/bin/codex-init
+RUN chmod +x /usr/local/bin/codex-init && \
+    chmod 0644 /usr/local/share/codex/config.toml.tmpl
 
 # Set zsh as default shell and prepare home directory template
 RUN chsh -s /bin/zsh ${USERNAME} && \

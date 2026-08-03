@@ -1,0 +1,51 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+TEMPLATE="/usr/local/share/codex/config.toml.tmpl"
+SAVED_ENV="${HOME}/.config/codex-bootstrap.env"
+OUTPUT="${HOME}/.codex/config.toml"
+
+if [ ! -f "${TEMPLATE}" ]; then
+    echo "codex-init: template not found at ${TEMPLATE}" >&2
+    exit 1
+fi
+
+mkdir -p "${HOME}/.config" "${HOME}/.codex"
+
+if [ -f "${SAVED_ENV}" ]; then
+    # shellcheck disable=SC1090
+    . "${SAVED_ENV}"
+fi
+
+if [ -z "${CODEX_ENDPOINT:-}" ] || [ -z "${CODEX_DEPLOYMENT:-}" ]; then
+    if [ ! -t 0 ]; then
+        echo "codex-init: no saved values and no TTY; skipping (run 'codex-init' manually)." >&2
+        exit 0
+    fi
+    cat <<EOF
+
+Configuring Codex (Azure OpenAI via Entra).
+Saved to: ${SAVED_ENV}
+Re-run 'codex-init' any time to change these values.
+
+EOF
+    read -rp "Azure OpenAI endpoint URL (e.g. https://my-openai-resource.openai.azure.com): " CODEX_ENDPOINT
+    read -rp "Deployment name (e.g. gpt-5.4): " CODEX_DEPLOYMENT
+    CODEX_ENDPOINT="${CODEX_ENDPOINT%/}"
+
+    if [ -z "${CODEX_ENDPOINT}" ] || [ -z "${CODEX_DEPLOYMENT}" ]; then
+        echo "codex-init: both values are required; aborting." >&2
+        exit 1
+    fi
+
+    umask 077
+    cat > "${SAVED_ENV}" <<EOF
+CODEX_ENDPOINT="${CODEX_ENDPOINT}"
+CODEX_DEPLOYMENT="${CODEX_DEPLOYMENT}"
+EOF
+fi
+
+export CODEX_ENDPOINT CODEX_DEPLOYMENT
+umask 077
+envsubst '${CODEX_ENDPOINT} ${CODEX_DEPLOYMENT}' < "${TEMPLATE}" > "${OUTPUT}"
+echo "codex-init: wrote ${OUTPUT}"

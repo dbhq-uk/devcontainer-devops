@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Ansible with collections and Python dependencies
   - PowerShell with modules (Az, Pester, PSScriptAnalyzer, powershell-yaml, ImportExcel)
   - Python 3 with DevOps packages
+  - .NET SDK 10 (LTS channel 10.0, or a pinned SDK version)
   - kubelogin (latest or pinned)
   - yq (latest or pinned)
   - jq
@@ -29,7 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - git-crypt
   - pre-commit
   - ZSH with Oh My Zsh and plugins (zsh-autosuggestions, zsh-syntax-highlighting)
-- VS Code extensions for DevOps work
+- VS Code extensions for DevOps work (including C# and C# Dev Kit for .NET development)
 - ZSH as default shell with Oh My Zsh configuration
 - Shell-aware environment configuration (bash/zsh completions)
 - Custom .bashrc, .bash_aliases, .zshrc, and .environment files
@@ -37,6 +38,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Persistent volume mounts for workspace and home directory
 - Ansible collections: community.general, ansible.posix, azure.azcollection, community.docker, ansible.windows, community.crypto, kubernetes.core, microsoft.ad, community.windows
 - Automatic installation of Python requirements for Ansible collections
+- claude-swap (`cswap`), the Claude Code multi-account switcher, installed
+  system-wide from PyPI (latest or pinned via `CSWAP_VERSION`)
+- uv (`uv`, `uvx`), the Astral Python package/project manager, installed as a
+  standalone binary with SHA256 verification (latest or pinned via `UV_VERSION`).
+  Available for interactive use only — no tool is installed through it yet
 - Validation and integration test scripts
 - Terminal profiles for zsh, bash, and pwsh
 - .gitignore and .dockerignore files
@@ -59,6 +65,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - PowerShell installer now configures PSGallery and installs common modules
 - Ansible installer automatically finds and installs collection requirements
 - Added cleanup step to remove /tmp/install-* directories
+- Bumped default Node.js major from 22 to 24 LTS
+- CA trust is now a bring-your-own drop-in: put a PEM `*.crt` chain in
+  `.devcontainer/files/certs/` and the Dockerfile merges it into the system
+  bundle. `NODE_EXTRA_CA_CERTS` points at `/etc/ssl/certs/ca-certificates.crt`
+  rather than a single named certificate, so the build works with no
+  certificates supplied
+- `devcontainer.json` now builds from the local `Dockerfile` by default; the
+  pre-built registry image is the commented alternative
+- `azure-pipelines.yml` uses placeholders for the agent pool, container registry
+  and registry service connection
 
 ### Fixed
 - Entrypoint script now properly executes via postStartCommand
