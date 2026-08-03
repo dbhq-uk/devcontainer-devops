@@ -1,6 +1,8 @@
 #!/bin/bash
 set -euo pipefail
 
+. "$(dirname "$0")/_arch.sh"
+
 WORKDIR="/tmp/install-yq"
 mkdir -p "${WORKDIR}"
 cd "${WORKDIR}"
@@ -21,7 +23,7 @@ fi
 echo "Installing yq version ${VERSION}..."
 
 # Download yq
-YQ_BINARY="yq_linux_amd64"
+YQ_BINARY="yq_linux_${ARCH_DEB}"
 DOWNLOAD_URL="https://github.com/mikefarah/yq/releases/download/v${VERSION}/${YQ_BINARY}"
 
 echo "Downloading from: $DOWNLOAD_URL"

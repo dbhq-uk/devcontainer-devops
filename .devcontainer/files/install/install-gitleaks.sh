@@ -1,6 +1,8 @@
 #!/bin/bash
 set -euo pipefail
 
+. "$(dirname "$0")/_arch.sh"
+
 WORKDIR="/tmp/install-gitleaks"
 mkdir -p "${WORKDIR}"
 cd "${WORKDIR}"
@@ -20,7 +22,7 @@ fi
 
 echo "Installing gitleaks version ${VERSION}..."
 
-curl -L "https://github.com/gitleaks/gitleaks/releases/download/v${VERSION}/gitleaks_${VERSION}_linux_x64.tar.gz" -o gitleaks.tar.gz
+curl -L "https://github.com/gitleaks/gitleaks/releases/download/v${VERSION}/gitleaks_${VERSION}_linux_${ARCH_X64}.tar.gz" -o gitleaks.tar.gz
 
 tar -xzf gitleaks.tar.gz gitleaks
 chmod +x gitleaks

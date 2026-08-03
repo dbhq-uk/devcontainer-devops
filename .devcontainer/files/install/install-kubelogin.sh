@@ -1,6 +1,8 @@
 #!/bin/bash
 set -euo pipefail
 
+. "$(dirname "$0")/_arch.sh"
+
 WORKDIR="/tmp/install-kubelogin"
 mkdir -p "${WORKDIR}"
 cd "${WORKDIR}"
@@ -21,12 +23,12 @@ fi
 echo "Installing kubelogin version ${VERSION}..."
 
 # Download kubelogin
-curl -LO "https://github.com/Azure/kubelogin/releases/download/v${VERSION}/kubelogin-linux-amd64.zip"
+curl -LO "https://github.com/Azure/kubelogin/releases/download/v${VERSION}/kubelogin-linux-${ARCH_DEB}.zip"
 
 # Extract and install
-unzip kubelogin-linux-amd64.zip
-chmod +x bin/linux_amd64/kubelogin
-mv bin/linux_amd64/kubelogin /usr/local/bin/
+unzip "kubelogin-linux-${ARCH_DEB}.zip"
+chmod +x "bin/linux_${ARCH_DEB}/kubelogin"
+mv "bin/linux_${ARCH_DEB}/kubelogin" /usr/local/bin/
 
 # Verify installation
 kubelogin --version

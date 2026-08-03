@@ -1,12 +1,14 @@
 #!/bin/bash
 set -euo pipefail
 
+. "$(dirname "$0")/_arch.sh"
+
 WORKDIR="/tmp/install-tf-summarize"
 mkdir -p "${WORKDIR}"
 cd "${WORKDIR}"
 
 OS="linux"
-ARCH="amd64"
+ARCH="${ARCH_DEB}"
 
 # Use provided version or fetch latest from GitHub
 if [ -z "${1:-}" ]; then

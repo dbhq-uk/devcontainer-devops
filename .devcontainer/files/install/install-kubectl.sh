@@ -1,6 +1,8 @@
 #!/bin/bash
 set -euo pipefail
 
+. "$(dirname "$0")/_arch.sh"
+
 WORKDIR="/tmp/install-kubectl"
 mkdir -p "${WORKDIR}"
 cd "${WORKDIR}"
@@ -17,10 +19,10 @@ fi
 echo "Installing kubectl version ${VERSION}..."
 
 # Download kubectl
-curl -LO "https://dl.k8s.io/release/v${VERSION}/bin/linux/amd64/kubectl"
+curl -LO "https://dl.k8s.io/release/v${VERSION}/bin/linux/${ARCH_DEB}/kubectl"
 
 # Download checksum
-curl -LO "https://dl.k8s.io/release/v${VERSION}/bin/linux/amd64/kubectl.sha256"
+curl -LO "https://dl.k8s.io/release/v${VERSION}/bin/linux/${ARCH_DEB}/kubectl.sha256"
 
 # Verify checksum
 echo "$(cat kubectl.sha256)  kubectl" | sha256sum --check

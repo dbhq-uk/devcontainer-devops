@@ -12,11 +12,13 @@ set -euo pipefail
 # Note for whoever migrates the first tool to `uv tool install`: this RUN sits
 # late in the Dockerfile and will need to move above its first consumer.
 
+. "$(dirname "$0")/_arch.sh"
+
 WORKDIR="/tmp/install-uv"
 mkdir -p "${WORKDIR}"
 cd "${WORKDIR}"
 
-TARGET="x86_64-unknown-linux-gnu"
+TARGET="${ARCH_GNU}-unknown-linux-gnu"
 
 # Use provided version or fetch latest from GitHub.
 # NOTE: uv's release tags have no "v" prefix (e.g. "0.11.33"), unlike most of

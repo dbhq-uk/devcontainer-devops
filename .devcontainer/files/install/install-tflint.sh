@@ -1,6 +1,8 @@
 #!/bin/bash
 set -euo pipefail
 
+. "$(dirname "$0")/_arch.sh"
+
 WORKDIR="/tmp/install-tflint"
 mkdir -p "${WORKDIR}"
 cd "${WORKDIR}"
@@ -22,7 +24,7 @@ fi
 echo "Installing tflint version ${VERSION}..."
 
 # Download tflint
-curl -L "https://github.com/terraform-linters/tflint/releases/download/v${VERSION}/tflint_linux_amd64.zip" -o tflint.zip
+curl -L "https://github.com/terraform-linters/tflint/releases/download/v${VERSION}/tflint_linux_${ARCH_DEB}.zip" -o tflint.zip
 
 # Extract and install
 unzip tflint.zip
