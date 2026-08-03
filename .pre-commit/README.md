@@ -133,7 +133,14 @@ exclude: |
 
 ## CI/CD Integration
 
-Pre-commit also runs in the Azure DevOps pipeline to ensure consistency.
+CI does not run `pre-commit` itself - it runs the linters that matter for this
+repository directly, in the `lint` job of
+[`.github/workflows/build.yml`](../.github/workflows/build.yml): `bash -n` and
+`shellcheck` over every shell script, a JSON parse over every JSON file, and
+`hadolint` over the Dockerfile.
+
+Dockerfile lint rules live in [`.hadolint.yaml`](../.hadolint.yaml) and are
+shared, so the `hadolint-docker` hook here and the CI job agree by construction.
 
 ## Common Issues
 

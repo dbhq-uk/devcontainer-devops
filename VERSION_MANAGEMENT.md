@@ -26,7 +26,12 @@ Each installation script checks if a version is provided:
 
 ### Option 1: Via devcontainer.json (Recommended)
 
-Edit `.devcontainer/build/devcontainer.json` or `.devcontainer/local/devcontainer.json`:
+> **Pinning only applies when you build locally.** `.devcontainer/devcontainer.json`
+> pulls the pre-built image by default, and build args do nothing to an image
+> that is already built. Comment out the `"image"` line and uncomment the
+> `"build"` block first.
+
+Edit `.devcontainer/devcontainer.json`:
 
 ```json
 {
@@ -52,15 +57,22 @@ ARG KUBECTL_VERSION=           # Use latest
 ARG HELM_VERSION=3.14.0        # Pin this
 ```
 
-### Option 3: Via Pipeline
+### Option 3: Via the build command
 
-In `azure-pipelines.yml`:
+When building the image yourself:
 
-```yaml
-arguments: |
-  --build-arg TERRAFORM_VERSION=1.13.5
-  --build-arg KUBECTL_VERSION=1.30.0
+```bash
+docker build .devcontainer \
+  --file .devcontainer/Dockerfile \
+  --target final \
+  --build-arg TERRAFORM_VERSION=1.13.5 \
+  --build-arg KUBECTL_VERSION=1.30.0 \
+  --tag devcontainer-devops:pinned
 ```
+
+CI deliberately passes no version build args - published images install the
+latest of everything left unpinned, which is why a release tag is a
+point-in-time snapshot rather than a reproducible build.
 
 ## Checking Current Versions
 

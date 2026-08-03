@@ -2,15 +2,41 @@
 
 All notable changes to this project will be documented in this file.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
+
+Releases are calendar-versioned (`vYYYY.MM.DD`) rather than semantically
+versioned. Most tools install at "latest", so a tag records what the image
+contained on a given date; it cannot promise a compatibility contract.
 
 ## [Unreleased]
 
 ### Added
 - Complete devcontainer configuration for DevOps workflows
 - Dockerfile with multi-tool installation
-- Azure DevOps CI/CD pipeline for container registry
+- GitHub Actions CI publishing to the GitHub Container Registry:
+  - `ci.yml` lints, builds and tests both architectures on pull requests, and
+    publishes `:main` / `:sha-<short>` on pushes to `main`
+  - `release.yml` cuts a weekly calendar-versioned release from a `--no-cache`
+    rebuild and moves `:latest`
+  - `build.yml` holds the shared build so the two entry points cannot drift
+  - SBOM and Sigstore-signed SLSA build provenance on every published image
+  - Trivy scanning reported to the Security tab, non-blocking by design
+- `linux/arm64` images alongside `linux/amd64`, each built on a native runner
+- `_arch.sh`, a sourced helper giving the install scripts the architecture in
+  the three spellings upstreams use
+- `.hadolint.yaml`, so Dockerfile lint rules are shared by CI and pre-commit
+
+### Changed
+- `devcontainer.json` pulls the published image by default; the local
+  Dockerfile build is now the commented-out contributor path
+- PowerShell installs from the upstream tarball on `arm64` - Microsoft's Ubuntu
+  package repository publishes the `powershell` deb for `amd64` only
+- Helm's checksum verification is now actually performed; it was downloaded and
+  then verified by a commented-out line
+
+### Removed
+- `azure-pipelines.yml` and its Azure Container Registry and Dependency-Track
+  integration, replaced by the GitHub Actions workflows above
 - Installation scripts with isolated /tmp directories for:
   - Terraform (latest or pinned version)
   - Terragrunt (v0.93.9)
@@ -71,11 +97,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   bundle. `NODE_EXTRA_CA_CERTS` points at `/etc/ssl/certs/ca-certificates.crt`
   rather than a single named certificate, so the build works with no
   certificates supplied
-- `devcontainer.json` now builds from the local `Dockerfile` by default; the
-  pre-built registry image is the commented alternative
-- `azure-pipelines.yml` uses placeholders for the agent pool, container registry
-  and registry service connection
-
 ### Fixed
 - Entrypoint script now properly executes via postStartCommand
 - Shell syntax issues in install-powershell.sh (changed from sh to bash)

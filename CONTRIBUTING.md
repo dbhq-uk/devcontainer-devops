@@ -115,10 +115,36 @@ Thank you for your interest in contributing! This document provides guidelines a
 
 Always test in the actual devcontainer:
 
-1. Rebuild the container
-2. Run validation: `bash tests/validate-tools.sh`
-3. Run integration tests: `bash tests/integration-test.sh`
-4. Test common workflows manually
+1. Switch `.devcontainer/devcontainer.json` to the local build - comment out the
+   `"image"` line and uncomment the `"build"` block. It pulls the published
+   image by default, which would not contain your changes.
+2. Rebuild the container
+3. Run validation: `bash tests/validate-tools.sh`
+4. Run integration tests: `bash tests/integration-test.sh`
+5. Test common workflows manually
+
+Take care not to commit that switch. CI builds from the `Dockerfile` regardless,
+so leaving `"image"` active is correct for everyone who is not changing the
+image itself.
+
+### What CI checks
+
+Opening a pull request runs the `lint` job (`bash -n` and `shellcheck` over
+every script, a JSON parse over every JSON file, `hadolint` over the
+Dockerfile), then builds `linux/amd64` and `linux/arm64` and runs
+`tests/run-all-tests.sh` inside each image. Nothing is published from a pull
+request.
+
+You can run the lint checks locally before pushing:
+
+```bash
+shellcheck -x -S warning .devcontainer/files/install/*.sh tests/*.sh scripts/*.sh
+hadolint --config .hadolint.yaml .devcontainer/Dockerfile
+```
+
+**The image builds for two architectures, so never hardcode one.** Source
+`_arch.sh` in any install script that downloads an architecture-specific
+artefact - see the README's "Adding New Tools".
 
 ### Documentation
 

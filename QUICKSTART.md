@@ -13,8 +13,8 @@ Get up and running with the DevOps DevContainer in 5 minutes!
 ### 1. Clone the Repository
 
 ```bash
-git clone <repository-url>
-cd devcontainer
+git clone https://github.com/grinidx/devcontainer-devops.git
+cd devcontainer-devops
 ```
 
 ### 2. Open in VS Code
@@ -32,9 +32,15 @@ Or manually:
 - Type: `Dev Containers: Reopen in Container`
 - Press Enter
 
-### 4. Wait for Build
+### 4. Wait for the Pull
 
-First build takes 5-10 minutes. Subsequent builds are much faster.
+The pre-built image is pulled from GHCR, so there is no build to wait for. It is
+a large image, so the first pull still takes a few minutes.
+
+If you are changing the `Dockerfile` or an install script, switch
+`.devcontainer/devcontainer.json` to the local build first - see
+[CONTRIBUTING.md](CONTRIBUTING.md#testing-changes). A full local build takes
+considerably longer than a pull.
 
 ### 5. Verify Installation
 
@@ -86,7 +92,7 @@ testall
 - Review [CONTRIBUTING.md](CONTRIBUTING.md) for development guidelines
 - Check [ARCHITECTURE.md](ARCHITECTURE.md) for system design
 - Set up [pre-commit hooks](.pre-commit/README.md)
-- Explore [variants](.devcontainer/variants/README.md) for cloud-specific setups
+- Read [VERSION_MANAGEMENT.md](VERSION_MANAGEMENT.md) to pin tool versions
 
 ## Troubleshooting
 

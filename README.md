@@ -57,12 +57,18 @@ This devcontainer includes pre-configured tools for:
 ## 🏗️ Repository Structure
 
 ```
-devcontainer/
+devcontainer-devops/
+├── .github/
+│   └── workflows/
+│       ├── build.yml           # Reusable build: lint, build, test, scan, publish
+│       ├── ci.yml              # Pull requests and pushes to main
+│       └── release.yml         # Weekly CalVer release
 ├── .devcontainer/
 │   ├── Dockerfile              # Multi-stage container build
 │   ├── devcontainer.json       # VS Code devcontainer configuration
 │   └── files/
 │       ├── install/            # Installation scripts (each uses /tmp/install-<tool>)
+│       │   ├── _arch.sh        # Sourced helper: architecture detection
 │       │   ├── install-ansible.sh
 │       │   ├── install-azcopy.sh
 │       │   ├── install-azure-cli.sh
@@ -105,7 +111,7 @@ devcontainer/
 │   └── validate-tools.sh       # Tool validation
 ├── scripts/
 │   └── check-latest-versions.sh
-├── azure-pipelines.yml         # CI/CD pipeline for ACR
+├── .hadolint.yaml              # Dockerfile lint rules, shared by CI and pre-commit
 ├── ARCHITECTURE.md             # System architecture documentation
 ├── CHANGELOG.md                # Version history
 ├── CONTRIBUTING.md             # Contribution guidelines
@@ -127,8 +133,8 @@ devcontainer/
 
 1. **Clone the repository:**
    ```bash
-   git clone <repository-url>
-   cd devcontainer
+   git clone https://github.com/grinidx/devcontainer-devops.git
+   cd devcontainer-devops
    ```
 
 2. **Open in VS Code:**
@@ -139,10 +145,30 @@ devcontainer/
 3. **Reopen in Container:**
    - Press `F1` or `Ctrl+Shift+P`
    - Select `Dev Containers: Reopen in Container`
-   - Wait for the container to build (first time takes longer)
+   - The pre-built image is pulled from GHCR, so there is no wait for a build
 
 4. **Start developing!**
    The container will be ready with all tools pre-installed.
+
+### Using the image directly
+
+You do not need this repository to use the container. Point any
+`devcontainer.json` at the published image, or pull it yourself:
+
+```bash
+docker pull ghcr.io/grinidx/devcontainer-devops:latest
+```
+
+| Tag | What it is |
+|-----|------------|
+| `latest` | The most recent weekly release |
+| `2026.08.09` | A specific weekly release |
+| `2026.08` | The most recent release in that month |
+| `main` | Head of the default branch, rebuilt on every push |
+| `sha-abc1234` | One specific commit |
+
+Images are published for `linux/amd64` and `linux/arm64`; Docker picks the
+right one automatically.
 
 ## 💾 Storage Configuration
 
@@ -179,32 +205,61 @@ accident. Adding none is fine: the build succeeds and the container trusts the
 public roots from the base image. See
 [`.devcontainer/files/certs/README.md`](.devcontainer/files/certs/README.md).
 
-## 🔄 CI/CD Pipeline
+## 🔄 CI/CD
 
-An Azure DevOps pipeline is included to automatically build and push the container image to Azure Container Registry (ACR).
+GitHub Actions builds, tests and publishes the image to the GitHub Container
+Registry. There is nothing to configure - it runs on the repository's own
+`GITHUB_TOKEN`, with no secrets and no external registry account.
 
-### Setup
+| Workflow | Trigger | What it does |
+|----------|---------|--------------|
+| [`ci.yml`](.github/workflows/ci.yml) | Pull requests | Lints, builds both architectures, runs the test suite. Publishes nothing |
+| [`ci.yml`](.github/workflows/ci.yml) | Push to `main` | The same, then publishes `:main` and `:sha-<short>` |
+| [`release.yml`](.github/workflows/release.yml) | Sundays 03:00 UTC, or manually | A `--no-cache` rebuild, published as a dated release and `:latest` |
 
-1. **Create Azure Container Registry:**
-   ```bash
-   az acr create --resource-group <rg-name> --name <acr-name> --sku Basic
-   ```
+Both call [`build.yml`](.github/workflows/build.yml), which holds the actual
+build so the two entry points cannot drift apart.
 
-2. **Configure Azure DevOps:**
-   - Create a Docker Registry service connection to your ACR
-   - Replace the `<your-agent-pool>`, `<your-registry>` and
-     `<your-registry-service-connection>` placeholders in `azure-pipelines.yml`
-   - Either provide a `Dependency_track` variable group (supplying
-     `Dependency_track_URL` and `Dependency_track_API_KEY`) or remove that
-     variable group and the SBOM upload task
+### How a build works
 
-3. **Pipeline Triggers:**
-   - Automatically triggers on commits to `main`
-   - Weekly scheduled rebuild (Sundays, 00:00) using `--no-cache` so unpinned
-     tools and the base image pick up upstream updates
-   - Publishes an SBOM to Dependency Track
+Each architecture builds on its own native runner - `ubuntu-24.04` and
+`ubuntu-24.04-arm` - rather than under QEMU emulation, which would take hours
+for an image this size. Each runner builds its platform, loads it locally, runs
+[`tests/run-all-tests.sh`](tests/run-all-tests.sh) against the real image, and
+only then pushes by digest. A final job merges the digests into one
+multi-architecture manifest.
 
-See [`azure-pipelines.yml`](azure-pipelines.yml) for the full pipeline definition.
+### Versioning
+
+Releases are calendar-versioned: `v2026.08.09` is the image as it was built on
+that date. Most entries in `versions.json` are "install latest", so a tag is a
+point-in-time snapshot rather than a reproducible build - rebuilding the same
+tag a week later would produce a different image. **If you need one exact
+image, pin the digest**, which every release records.
+
+### Supply chain
+
+Every published image carries an SBOM and SLSA build provenance, generated by
+BuildKit and signed with a short-lived [Sigstore](https://www.sigstore.dev/)
+certificate. Verify that an image really came from this repository:
+
+```bash
+gh attestation verify oci://ghcr.io/grinidx/devcontainer-devops:latest \
+  -R grinidx/devcontainer-devops
+```
+
+Read the SBOM out of the image:
+
+```bash
+docker buildx imagetools inspect ghcr.io/grinidx/devcontainer-devops:latest \
+  --format '{{ json .SBOM }}'
+```
+
+Trivy scans each build for HIGH and CRITICAL vulnerabilities and reports them
+to the repository's Security tab. Scans report, they do not block: an image
+bundling the Azure CLI, Ansible and a .NET SDK always carries some upstream
+findings, and blocking on those would stop the weekly rebuild and leave the
+published image staler than the CVEs it was avoiding.
 
 ## 🛠️ Customization
 
@@ -220,6 +275,20 @@ See [`azure-pipelines.yml`](azure-pipelines.yml) for the full pipeline definitio
 
    The whole directory is copied and `chmod +x`'d in one step, so no `COPY` line
    is needed per script.
+
+   **The image is built for `amd64` and `arm64`, so never hardcode an
+   architecture.** Source the shared helper and use the spelling your upstream
+   uses:
+
+   ```bash
+   . "$(dirname "$0")/_arch.sh"
+   # ARCH_DEB  amd64  / arm64     Debian and Go convention, most releases
+   # ARCH_X64  x64    / arm64     e.g. gitleaks
+   # ARCH_GNU  x86_64 / aarch64   Rust target triples, e.g. uv
+   ```
+
+   If the tool has no `arm64` Linux build, say so in a comment and skip it on
+   that architecture rather than failing the build.
 
 2. Add an `ARG YOUR_TOOL_VERSION=` to **both** blocks at the top of the
    `Dockerfile` (before and after the `FROM`), then invoke the script:
@@ -254,8 +323,10 @@ builds from the local `Dockerfile` by default — to pin, add the versions to it
 }
 ```
 
-> The CI pipeline does **not** currently pass these build args, so scheduled
-> image builds install the latest of everything left unpinned in the `Dockerfile`.
+> CI does **not** pass these build args, so published images install the latest
+> of everything left unpinned in the `Dockerfile`. That is deliberate - see
+> [Versioning](#versioning) - and it is why a release tag is a snapshot rather
+> than a reproducible build.
 
 ## 📝 Usage Examples
 
@@ -306,7 +377,7 @@ cswap switch            # rotate to the next account
 
 ## 📄 License
 
-[Add your license information here]
+MIT - see [`LICENSE`](LICENSE).
 
 ## 🐛 Troubleshooting
 
@@ -333,4 +404,6 @@ re-seed, or update the tool in place.
 
 ## 📞 Support
 
-[Add contact information or support channels]
+Open an [issue](https://github.com/grinidx/devcontainer-devops/issues). For
+anything security-related, follow [`SECURITY.md`](SECURITY.md) instead of
+opening a public issue.
