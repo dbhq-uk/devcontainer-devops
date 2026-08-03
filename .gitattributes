@@ -1,0 +1,25 @@
+# Normalise every text file to LF, in the repository and in the working tree.
+#
+# The repo previously held a mix: the root docs and configs were CRLF while
+# every shell script under .devcontainer/files/ was LF. Nothing declared which
+# was intended, so editing a CRLF file with an LF-writing tool left it mixed and
+# the mixed-line-ending pre-commit hook rewrote the whole file. VS Code is
+# already configured for LF here (devcontainer.json sets "files.eol": "\n"), so
+# LF is what this settles on.
+#
+# Shell scripts in particular must be LF: a CRLF shebang line makes the kernel
+# look for an interpreter with a trailing carriage return and the script fails
+# with a confusing "bad interpreter" error.
+* text=auto eol=lf
+
+# Leave binaries alone
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.gz binary
+*.tgz binary
+*.zip binary
+*.woff binary
+*.woff2 binary
