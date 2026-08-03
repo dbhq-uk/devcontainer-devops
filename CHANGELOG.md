@@ -11,32 +11,9 @@ contained on a given date; it cannot promise a compatibility contract.
 ## [Unreleased]
 
 ### Added
+
 - Complete devcontainer configuration for DevOps workflows
 - Dockerfile with multi-tool installation
-- GitHub Actions CI publishing to the GitHub Container Registry:
-  - `ci.yml` lints, builds and tests both architectures on pull requests, and
-    publishes `:main` / `:sha-<short>` on pushes to `main`
-  - `release.yml` cuts a weekly calendar-versioned release from a `--no-cache`
-    rebuild and moves `:latest`
-  - `build.yml` holds the shared build so the two entry points cannot drift
-  - SBOM and Sigstore-signed SLSA build provenance on every published image
-  - Trivy scanning reported to the Security tab, non-blocking by design
-- `linux/arm64` images alongside `linux/amd64`, each built on a native runner
-- `_arch.sh`, a sourced helper giving the install scripts the architecture in
-  the three spellings upstreams use
-- `.hadolint.yaml`, so Dockerfile lint rules are shared by CI and pre-commit
-
-### Changed
-- `devcontainer.json` pulls the published image by default; the local
-  Dockerfile build is now the commented-out contributor path
-- PowerShell installs from the upstream tarball on `arm64` - Microsoft's Ubuntu
-  package repository publishes the `powershell` deb for `amd64` only
-- Helm's checksum verification is now actually performed; it was downloaded and
-  then verified by a commented-out line
-
-### Removed
-- `azure-pipelines.yml` and its Azure Container Registry and Dependency-Track
-  integration, replaced by the GitHub Actions workflows above
 - Installation scripts with isolated /tmp directories for:
   - Terraform (latest or pinned version)
   - Terragrunt (v0.93.9)
@@ -78,9 +55,26 @@ contained on a given date; it cannot promise a compatibility contract.
   - SECURITY.md with security policies
   - ARCHITECTURE.md with system architecture
   - CHANGELOG.md (this file)
+- GitHub Actions CI publishing to the GitHub Container Registry:
+  - `ci.yml` lints, builds and tests both architectures on pull requests, and
+    publishes `:main` / `:sha-<short>` on pushes to `main`
+  - `release.yml` cuts a weekly calendar-versioned release from a `--no-cache`
+    rebuild and moves `:latest`
+  - `build.yml` holds the shared build so the two entry points cannot drift
+  - SBOM and Sigstore-signed SLSA build provenance on every published image
+  - Trivy scanning reported to the Security tab, non-blocking by design
+- `linux/arm64` images alongside `linux/amd64`, each built on a native runner
+- `_arch.sh`, a sourced helper giving the install scripts the architecture in
+  the three spellings upstreams use
+- `.hadolint.yaml`, so Dockerfile lint rules are shared by CI and pre-commit
+- `.gitattributes`, declaring LF for every text file
+- `.markdownlint.json` and `.yamllint.yaml`, so the markdown and YAML hooks
+  have rules that match this repository rather than failing on their defaults
+- `.secrets.baseline`, without which the `detect-secrets` hook could not run
 
 ### Changed
-- Updated all installation scripts to use dedicated /tmp/install-<tool> directories
+
+- Updated all installation scripts to use dedicated `/tmp/install-<tool>` directories
 - Set zsh as default shell for vscode user
 - Configured postStartCommand to run entrypoint script
 - Environment file now detects shell type and loads appropriate completions
@@ -97,13 +91,40 @@ contained on a given date; it cannot promise a compatibility contract.
   bundle. `NODE_EXTRA_CA_CERTS` points at `/etc/ssl/certs/ca-certificates.crt`
   rather than a single named certificate, so the build works with no
   certificates supplied
+- `devcontainer.json` pulls the published image by default; the local
+  Dockerfile build is now the commented-out contributor path
+- PowerShell installs from the upstream tarball on `arm64` - Microsoft's Ubuntu
+  package repository publishes the `powershell` deb for `amd64` only
+- Helm's checksum verification is now actually performed; it was downloaded and
+  then verified by a commented-out line
+- The `shellcheck` and `hadolint` pre-commit hooks now read the same config
+  as the CI lint job, so a clean run locally means a clean run in CI
+
+### Removed
+
+- `azure-pipelines.yml` and its Azure Container Registry and Dependency-Track
+  integration, replaced by the GitHub Actions workflows above
+- The `ansible-lint` pre-commit hook and `.ansible-lint`. This repo contains no
+  playbooks or roles, and the hook was pointed at the GitHub workflow files
+
 ### Fixed
+
 - Entrypoint script now properly executes via postStartCommand
 - Shell syntax issues in install-powershell.sh (changed from sh to bash)
 - Bash completion errors in zsh by adding shell detection
 - Recursive permissions for Ansible collections
+- `pre-commit run --all-files` now completes. It previously failed on a missing
+  `.secrets.baseline`, on `check-json` parsing the JSONC `devcontainer.json`,
+  on 21 scripts carrying a shebang without an executable bit, and on an
+  `ansible-lint` hook incompatible with current `ansible-core`
+- `install-azcopy.sh` can now install a pinned version. The URL pointed at a
+  retired CDN via a path containing a shell glob that curl cannot expand, so
+  that branch could never have worked; it now uses the GitHub release asset
+- Line endings are consistent. The repo mixed CRLF docs with LF scripts and
+  declared neither, so editing a file could silently leave it mixed
 
 ### Security
+
 - Added checksum validation for downloaded binaries (kubectl, helm, yq, terragrunt)
 - Pinned tool versions for reproducibility where appropriate
 - Added security scanning tools (checkov, tflint)
@@ -112,6 +133,7 @@ contained on a given date; it cannot promise a compatibility contract.
 ## [1.0.0] - 2025-11-21
 
 ### Added
+
 - Initial release of DevOps DevContainer
 - Basic tool installations
 - Simple devcontainer configuration
@@ -136,6 +158,7 @@ When making changes:
 - **PATCH**: Bug fixes (backward compatible)
 
 Example: 2.1.3
+
 - 2 = Major version
-- 1 = Minor version  
+- 1 = Minor version
 - 3 = Patch version

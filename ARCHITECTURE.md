@@ -1,6 +1,6 @@
 # DevContainer Architecture
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────────┐
 │                     VS Code DevContainer                         │
 │                                                                   │
@@ -63,17 +63,20 @@
 External Connections:
 ─────────────────────
 
+What the tooling inside the container reaches out to. This is not where the
+image itself comes from - see the build flow below for that.
+
 ┌─────────────────────────────────────────────────────────────────┐
 │                      Azure Cloud                                │
 │                                                                   │
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐         │
 │  │ Azure ACR    │  │ Azure VM     │  │ Azure AKS    │         │
-│  │ (Images)     │  │ (Resources)  │  │ (K8s)        │         │
+│  │ (Registries) │  │ (Resources)  │  │ (K8s)        │         │
 │  └──────────────┘  └──────────────┘  └──────────────┘         │
 │                                                                   │
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐         │
-│  │ Key Vault    │  │ Storage      │  │ DevOps       │         │
-│  │ (Secrets)    │  │ (State)      │  │ (CI/CD)      │         │
+│  │ Key Vault    │  │ Storage      │  │ Entra ID     │         │
+│  │ (Secrets)    │  │ (State)      │  │ (Auth)       │         │
 │  └──────────────┘  └──────────────┘  └──────────────┘         │
 └─────────────────────────────────────────────────────────────────┘
 
@@ -117,18 +120,18 @@ Tool Interaction Flow:
           │
           ├──────▶ tflint (Linting)
           └──────▶ checkov (Security)
-          
+
    ┌─────────────┐
    │  Kubectl    │──────────▶ Kubernetes Cluster
    │  Helm       │
    └─────────────┘
           │
           └──────▶ kubelogin (Auth)
-          
+
    ┌─────────────┐
    │  Docker     │──────────▶ Container Registry
    └─────────────┘
-   
+
    ┌─────────────┐
    │  Ansible    │──────────▶ Target Servers
    └─────────────┘
