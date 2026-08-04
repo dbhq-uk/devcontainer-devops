@@ -267,9 +267,12 @@ jobs:
         working-directory: /tmp/digests
         run: |
           set -euo pipefail
+          # Annotations and tags are both top-level in DOCKER_METADATA_OUTPUT_JSON.
+          # Docker's own example reads .target."docker-metadata-action".annotations,
+          # but that path only exists in the separate bake file, so against this
+          # variable it resolves to null and jq cannot iterate it.
           annotations="$(jq -cr \
-            '.target."docker-metadata-action".annotations
-             | map("--annotation " + .) | join(" ")' \
+            '.annotations | map("--annotation " + .) | join(" ")' \
             <<< "$DOCKER_METADATA_OUTPUT_JSON")"
           tags="$(jq -cr '.tags | map("-t " + .) | join(" ")' \
             <<< "$DOCKER_METADATA_OUTPUT_JSON")"
