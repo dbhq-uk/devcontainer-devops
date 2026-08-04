@@ -255,9 +255,16 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      # Annotations must target the index, not the manifests. This job assembles
+      # an index from manifests that are already pushed and immutable, and
+      # `imagetools create` rejects manifest-level annotations outright with
+      # '"manifest" annotations are not supported yet'. metadata-action defaults
+      # to the manifest level, so ask it for index annotations instead.
       - name: Docker metadata
         id: meta
         uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
+        env:
+          DOCKER_METADATA_ANNOTATIONS_LEVELS: index
         with:
           images: ${{ env.IMAGE }}
           tags: ${{ inputs.tags }}
