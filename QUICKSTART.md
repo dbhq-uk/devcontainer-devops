@@ -13,7 +13,7 @@ Get up and running with the DevOps DevContainer in 5 minutes!
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/grinidx/devcontainer-devops.git
+git clone https://github.com/dbhq-uk/devcontainer-devops.git
 cd devcontainer-devops
 ```
 

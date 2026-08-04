@@ -5,7 +5,7 @@
     // linux/amd64 and linux/arm64. Opening the folder pulls it instead of
     // spending half an hour building. Pin a dated tag (e.g. :2026.08.09) or a
     // digest if you need a fixed image - :latest moves every week.
-    "image": "ghcr.io/grinidx/devcontainer-devops:latest",
+    "image": "ghcr.io/dbhq-uk/devcontainer-devops:latest",
 
     // Option 2: build from the local Dockerfile.
     //

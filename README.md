@@ -134,7 +134,7 @@ devcontainer-devops/
 1. **Clone the repository:**
 
    ```bash
-   git clone https://github.com/grinidx/devcontainer-devops.git
+   git clone https://github.com/dbhq-uk/devcontainer-devops.git
    cd devcontainer-devops
    ```
 
@@ -158,7 +158,7 @@ You do not need this repository to use the container. Point any
 `devcontainer.json` at the published image, or pull it yourself:
 
 ```bash
-docker pull ghcr.io/grinidx/devcontainer-devops:latest
+docker pull ghcr.io/dbhq-uk/devcontainer-devops:latest
 ```
 
 | Tag | What it is |
@@ -246,14 +246,14 @@ BuildKit and signed with a short-lived [Sigstore](https://www.sigstore.dev/)
 certificate. Verify that an image really came from this repository:
 
 ```bash
-gh attestation verify oci://ghcr.io/grinidx/devcontainer-devops:latest \
-  -R grinidx/devcontainer-devops
+gh attestation verify oci://ghcr.io/dbhq-uk/devcontainer-devops:latest \
+  -R dbhq-uk/devcontainer-devops
 ```
 
 Read the SBOM out of the image:
 
 ```bash
-docker buildx imagetools inspect ghcr.io/grinidx/devcontainer-devops:latest \
+docker buildx imagetools inspect ghcr.io/dbhq-uk/devcontainer-devops:latest \
   --format '{{ json .SBOM }}'
 ```
 
@@ -415,6 +415,6 @@ re-seed, or update the tool in place.
 
 ## 📞 Support
 
-Open an [issue](https://github.com/grinidx/devcontainer-devops/issues). For
+Open an [issue](https://github.com/dbhq-uk/devcontainer-devops/issues). For
 anything security-related, follow [`SECURITY.md`](SECURITY.md) instead of
 opening a public issue.

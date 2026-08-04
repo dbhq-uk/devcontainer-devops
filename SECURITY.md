@@ -158,14 +158,14 @@ Confirm an image was built by this repository's workflow, and not by someone
 else:
 
 ```bash
-gh attestation verify oci://ghcr.io/grinidx/devcontainer-devops:latest \
-  -R grinidx/devcontainer-devops
+gh attestation verify oci://ghcr.io/dbhq-uk/devcontainer-devops:latest \
+  -R dbhq-uk/devcontainer-devops
 ```
 
 Inspect its SBOM:
 
 ```bash
-docker buildx imagetools inspect ghcr.io/grinidx/devcontainer-devops:latest \
+docker buildx imagetools inspect ghcr.io/dbhq-uk/devcontainer-devops:latest \
   --format '{{ json .SBOM }}'
 ```
 
@@ -173,7 +173,7 @@ Scan it yourself:
 
 ```bash
 trivy image --scanners vuln --severity HIGH,CRITICAL \
-  ghcr.io/grinidx/devcontainer-devops:latest
+  ghcr.io/dbhq-uk/devcontainer-devops:latest
 ```
 
 ## 📋 Known Security Considerations
