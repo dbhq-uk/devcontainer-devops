@@ -265,28 +265,46 @@ jobs:
       - name: Create manifest list
         id: manifest
         working-directory: /tmp/digests
+        env:
+          VERSION: ${{ steps.meta.outputs.version }}
         run: |
           set -euo pipefail
+
           # Annotations and tags are both top-level in DOCKER_METADATA_OUTPUT_JSON.
           # Docker's own example reads .target."docker-metadata-action".annotations,
-          # but that path only exists in the separate bake file, so against this
-          # variable it resolves to null and jq cannot iterate it.
-          annotations="$(jq -cr \
-            '.annotations | map("--annotation " + .) | join(" ")' \
-            <<< "$DOCKER_METADATA_OUTPUT_JSON")"
-          tags="$(jq -cr '.tags | map("-t " + .) | join(" ")' \
-            <<< "$DOCKER_METADATA_OUTPUT_JSON")"
+          # which only exists in the separate bake file that metadata-action also
+          # writes; against this variable it resolves to null.
+          #
+          # Build an argv array rather than a string. Annotation values contain
+          # spaces - the OCI description annotation is the repository description
+          # verbatim - so a single word-split string turns one annotation into
+          # several arguments, and buildx then tries to parse the stray words as
+          # image sources.
+          args=()
+          while IFS= read -r a; do
+            args+=(--annotation "$a")
+          done < <(jq -r '.annotations[]' <<< "$DOCKER_METADATA_OUTPUT_JSON")
 
-          # Word splitting is deliberate: these hold whole argument lists
-          # shellcheck disable=SC2046,SC2086
-          docker buildx imagetools create $annotations $tags \
-            $(printf '${{ env.IMAGE }}@sha256:%s ' *)
+          while IFS= read -r t; do
+            args+=(--tag "$t")
+          done < <(jq -r '.tags[]' <<< "$DOCKER_METADATA_OUTPUT_JSON")
 
-          digest="$(docker buildx imagetools inspect \
-            "${{ env.IMAGE }}:${{ steps.meta.outputs.version }}" \
+          # One file per pushed per-architecture digest, named for the digest
+          sources=()
+          for f in *; do
+            sources+=("${IMAGE}@sha256:${f}")
+          done
+          if [ ${#sources[@]} -eq 0 ]; then
+            echo "::error::no digests were downloaded - nothing to merge"
+            exit 1
+          fi
+
+          docker buildx imagetools create "${args[@]}" "${sources[@]}"
+
+          digest="$(docker buildx imagetools inspect "${IMAGE}:${VERSION}" \
             --format '{{ json .Manifest.Digest }}' | tr -d '"')"
           echo "digest=${digest}" >> "$GITHUB_OUTPUT"
-          echo "Published ${{ env.IMAGE }}@${digest}"
+          echo "Published ${IMAGE}@${digest}"
 
       # Sigstore-backed SLSA build provenance, pushed to the registry as an OCI
       # referrer. This is what `gh attestation verify` checks, and it replaces a
