@@ -107,7 +107,7 @@ RUN /tmp/install/install-ansible.sh
 
 RUN /tmp/install/install-helm.sh ${HELM_VERSION} && \
     /tmp/install/install-kubectl.sh ${KUBECTL_VERSION} && \
-    /tmp/install/install-kubelogin.sh ${KUBELOGIN_VERSION} 
+    /tmp/install/install-kubelogin.sh ${KUBELOGIN_VERSION}
 
 RUN /tmp/install/install-powershell.sh ${POWERSHELL_VERSION}
 

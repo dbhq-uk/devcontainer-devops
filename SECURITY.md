@@ -20,6 +20,7 @@ Security vulnerabilities should not be disclosed publicly until a fix is availab
 Send details to: **[your-security-email@example.com]**
 
 Include:
+
 - Description of the vulnerability
 - Steps to reproduce
 - Potential impact
@@ -51,10 +52,13 @@ Include:
    - Configure `.gitignore` properly
 
 3. **Container Registry**
-   - Use Azure Container Registry with private access
-   - Enable vulnerability scanning in ACR
-   - Implement image signing
-   - Use managed identities for authentication
+   - Images are published to the GitHub Container Registry, public and
+     anonymously pullable
+   - Every build is scanned by Trivy, with findings reported to the Security tab
+   - Every published image carries an SBOM and Sigstore-signed SLSA build
+     provenance - verify before use (see below)
+   - CI authenticates with the repository's own `GITHUB_TOKEN`; there are no
+     registry credentials to store or rotate
 
 4. **Volume Mounts**
    - Be careful with bind mounts
@@ -69,10 +73,11 @@ Include:
 ### Development Practices
 
 1. **Dependencies**
+
    ```bash
    # Verify checksums
    sha256sum -c <checksum-file>
-   
+
    # Pin versions
    pip install package==version
    ```
@@ -100,12 +105,14 @@ Include:
 ### Static Analysis
 
 - **tflint**: Terraform linter and security scanner
+
   ```bash
   tflint --init
   tflint
   ```
 
 - **checkov**: IaC security scanning
+
   ```bash
   checkov -d .
   checkov -f main.tf
@@ -114,6 +121,7 @@ Include:
 ### Secret Management
 
 - **git-crypt**: Transparent file encryption
+
   ```bash
   git-crypt init
   git-crypt add-gpg-user <key-id>
@@ -122,6 +130,7 @@ Include:
 ### Recommended Additional Tools
 
 Consider adding:
+
 - **trivy**: Container vulnerability scanner
 - **SOPS**: Secrets encryption
 - **Vault**: HashiCorp Vault for secret management
@@ -143,16 +152,28 @@ git diff | grep -i "password\|secret\|key"
 ansible-playbook --syntax-check playbook.yml
 ```
 
-### CI/CD Pipeline
+### Verifying a published image
 
-Add to `azure-pipelines.yml`:
+Confirm an image was built by this repository's workflow, and not by someone
+else:
 
-```yaml
-- task: Docker@2
-  displayName: 'Scan for Vulnerabilities'
-  inputs:
-    command: 'scan'
-    arguments: '$(imageRepository):$(tag)'
+```bash
+gh attestation verify oci://ghcr.io/grinidx/devcontainer-devops:latest \
+  -R grinidx/devcontainer-devops
+```
+
+Inspect its SBOM:
+
+```bash
+docker buildx imagetools inspect ghcr.io/grinidx/devcontainer-devops:latest \
+  --format '{{ json .SBOM }}'
+```
+
+Scan it yourself:
+
+```bash
+trivy image --scanners vuln --severity HIGH,CRITICAL \
+  ghcr.io/grinidx/devcontainer-devops:latest
 ```
 
 ## 📋 Known Security Considerations
@@ -180,6 +201,7 @@ Add to `azure-pipelines.yml`:
 ### Industry Standards
 
 This container aims to support:
+
 - CIS Docker Benchmarks
 - NIST Cybersecurity Framework
 - SOC 2 compliance requirements
@@ -188,7 +210,8 @@ This container aims to support:
 ### Audit Trail
 
 - Git history tracks all changes
-- Azure DevOps provides build logs
+- GitHub Actions provides build logs, and build provenance links each published
+  image back to the commit and workflow that produced it
 - Enable logging for compliance
 
 ## 📚 Security Resources

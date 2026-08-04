@@ -1,0 +1,33 @@
+name: ci
+
+# Pull requests build and test both architectures and publish nothing.
+# Pushes to main additionally publish :main and :sha-<short> to GHCR, so there
+# is always a current image to pull without waiting for the weekly release.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    uses: ./.github/workflows/build.yml
+    permissions:
+      contents: read
+      packages: write
+      security-events: write
+      id-token: write
+      attestations: write
+      artifact-metadata: write
+    with:
+      publish: ${{ github.event_name == 'push' }}
+      tags: |
+        type=raw,value=main,enable={{is_default_branch}}
+        type=sha,format=short

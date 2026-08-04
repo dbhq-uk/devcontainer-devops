@@ -1,6 +1,8 @@
 #!/bin/bash
 set -euo pipefail
 
+. "$(dirname "$0")/_arch.sh"
+
 WORKDIR="/tmp/install-helm"
 mkdir -p "${WORKDIR}"
 cd "${WORKDIR}"
@@ -21,17 +23,17 @@ fi
 echo "Installing Helm version ${VERSION}..."
 
 # Download Helm
-curl -LO "https://get.helm.sh/helm-v${VERSION}-linux-amd64.tar.gz"
+curl -LO "https://get.helm.sh/helm-v${VERSION}-linux-${ARCH_DEB}.tar.gz"
 
 # Download checksum
-curl -LO "https://get.helm.sh/helm-v${VERSION}-linux-amd64.tar.gz.sha256sum"
+curl -LO "https://get.helm.sh/helm-v${VERSION}-linux-${ARCH_DEB}.tar.gz.sha256sum"
 
 # Verify checksum
-# sha256sum -c helm-v${VERSION}-linux-amd64.tar.gz.sha256sum
+sha256sum -c "helm-v${VERSION}-linux-${ARCH_DEB}.tar.gz.sha256sum"
 
 # Extract and install
-tar -zxvf helm-v${VERSION}-linux-amd64.tar.gz
-mv linux-amd64/helm /usr/local/bin/helm
+tar -zxf "helm-v${VERSION}-linux-${ARCH_DEB}.tar.gz"
+mv "linux-${ARCH_DEB}/helm" /usr/local/bin/helm
 
 # Verify installation
 helm version

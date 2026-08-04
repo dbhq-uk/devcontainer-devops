@@ -14,6 +14,7 @@ pre-commit install --hook-type commit-msg
 ## What Gets Checked
 
 ### General
+
 - Trailing whitespace
 - End of file fixes
 - Large files detection
@@ -21,11 +22,13 @@ pre-commit install --hook-type commit-msg
 - Private key detection
 
 ### Shell Scripts
+
 - ShellCheck linting
 - Shebang validation
 - Execute permissions
 
 ### Terraform
+
 - Format checking (`terraform fmt`)
 - Validation (`terraform validate`)
 - Documentation generation
@@ -33,26 +36,32 @@ pre-commit install --hook-type commit-msg
 - Linting (tflint)
 
 ### Ansible
+
 - Ansible-lint for playbooks
 - YAML syntax validation
 
 ### Python
+
 - Code formatting (black)
 - Style checking (flake8)
 - Import sorting
 
 ### Docker
+
 - Dockerfile linting (hadolint)
 
 ### Documentation
+
 - Markdown linting
 - YAML linting
 
 ### Security
+
 - Secret detection
 - Private key scanning
 
 ### Git
+
 - Conventional commit message format
 
 ## Usage
@@ -70,11 +79,13 @@ git commit -m "feat: add new feature"
 ### Manual Run
 
 Run checks on all files:
+
 ```bash
 pre-commit run --all-files
 ```
 
 Run specific hook:
+
 ```bash
 pre-commit run terraform-fmt --all-files
 pre-commit run shellcheck --all-files
@@ -83,6 +94,7 @@ pre-commit run shellcheck --all-files
 ### Update Hooks
 
 Update to latest versions:
+
 ```bash
 pre-commit autoupdate
 ```
@@ -90,6 +102,7 @@ pre-commit autoupdate
 ## Bypassing Hooks
 
 **Not recommended**, but if needed:
+
 ```bash
 git commit --no-verify -m "emergency fix"
 ```
@@ -123,6 +136,7 @@ pre-commit run --all-files
 ### Skip specific files
 
 Add to `.pre-commit-config.yaml`:
+
 ```yaml
 exclude: |
   (?x)^(
@@ -133,13 +147,21 @@ exclude: |
 
 ## CI/CD Integration
 
-Pre-commit also runs in the Azure DevOps pipeline to ensure consistency.
+CI does not run `pre-commit` itself - it runs the linters that matter for this
+repository directly, in the `lint` job of
+[`.github/workflows/build.yml`](../.github/workflows/build.yml): `bash -n` and
+`shellcheck` over every shell script, a JSON parse over every JSON file, and
+`hadolint` over the Dockerfile.
+
+Dockerfile lint rules live in [`.hadolint.yaml`](../.hadolint.yaml) and are
+shared, so the `hadolint-docker` hook here and the CI job agree by construction.
 
 ## Common Issues
 
 ### Terraform validation fails
 
 Ensure Terraform is initialized:
+
 ```bash
 cd terraform/
 terraform init
@@ -152,6 +174,7 @@ Check `.ansible-lint` configuration or update playbook syntax.
 ### Hadolint fails
 
 Fix Dockerfile issues or add ignore rules:
+
 ```yaml
 args: ['--ignore', 'DL3008', '--ignore', 'DL3009']
 ```
