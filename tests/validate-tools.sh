@@ -84,6 +84,11 @@ validate_tool "claude" "claude --version" || ((FAILURES++))
 validate_tool "cswap" "cswap --version" || ((FAILURES++))
 echo ""
 
+# Workspace Tools
+echo "Workspace Tools:"
+validate_tool "ws" "ws --help" || ((FAILURES++))
+echo ""
+
 # Security Tools
 echo "Security Tools:"
 validate_tool "git-crypt" "git-crypt --version" || ((FAILURES++))

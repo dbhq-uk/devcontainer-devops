@@ -1,11 +1,28 @@
 # DevOps Development Container
 
-A comprehensive development container for DevOps and Infrastructure-as-Code workflows, built on Ubuntu 24.04 with essential tools for cloud infrastructure management, container orchestration, and automation.
+A pre-built **VS Code dev container for DevOps and Infrastructure-as-Code work**:
+Terraform, Terragrunt, Azure CLI, Ansible, Kubernetes, Helm, PowerShell and .NET
+on Ubuntu 24.04. Published multi-architecture to the GitHub Container Registry
+with an SBOM and SLSA build provenance, so there is nothing to build before you
+start.
+
+It is also a **multi-root devcontainer**: one container, several Git
+repositories open in a single VS Code window. A DevOps change is rarely confined
+to one repository - the Terraform module, the environment that consumes it, the
+Ansible role and the pipeline that ships it tend to move together. Instead of
+four windows running four containers, you get one Source Control panel listing
+every repository's pending changes, one search across all of them, and one
+toolchain to rebuild. See [Multi-root workspaces](#️-multi-root-one-container-every-repository).
+
+```bash
+docker pull ghcr.io/dbhq-uk/devcontainer-devops:latest
+```
 
 ## 🚀 Features
 
 This devcontainer includes pre-configured tools for:
 
+- **Multi-root workspaces**: the `ws` command clones repositories into a persistent volume and opens them all in one container
 - **Infrastructure as Code**: Terraform, Terragrunt, tflint, tf-summarize, checkov
 - **Cloud Management**: Azure CLI (az), AzCopy
 - **Container Operations**: Docker Engine, Helm, kubectl, kubelogin
@@ -17,10 +34,67 @@ This devcontainer includes pre-configured tools for:
 - **Development Utilities**: Custom bash/zsh aliases, shell completions, pre-commit
 - **Data Processing**: jq, yq
 
+## 🗂️ Multi-root: one container, every repository
+
+Most dev containers assume one repository per container. This one does not.
+
+`/workspace` is a **named Docker volume** rather than a bind mount of a single
+folder, so every repository cloned under it persists across rebuilds *and* sits
+as a sub-folder of the workspace file. That second part is what makes multi-root
+possible: VS Code will only open a multi-root workspace in a container when the
+workspace "references relative paths to sub-folders of the folder the
+`.code-workspace` file is in (or the folder itself)". Parent-relative paths such
+as `../other-repo` will not open, which is why the usual "sibling folders on the
+host" layout fails.
+
+### The `ws` command
+
+| Command | What it does |
+|---------|--------------|
+| `ws init` | Create `/workspace/devops.code-workspace`, seeded with any repositories already on the volume. Runs automatically when the container is created |
+| `ws add <git-url> [name]` | Clone a repository into `/workspace/<name>` and add it as a root |
+| `ws add <name>` | Add a repository already sitting on the volume |
+| `ws rm <name>` | Drop a root from the workspace. The clone stays on disk |
+| `ws list` | Show the current roots |
+
+```bash
+ws add https://github.com/acme/platform-terraform.git
+ws add https://github.com/acme/platform-ansible.git
+ws add git@github.com:acme/platform-pipelines.git
+ws list
+```
+
+### Opening it
+
+The workspace file lives on the volume, inside the container, so open it from a
+container window rather than from the host:
+
+- **File > Open Workspace from File…** and pick `/workspace/devops.code-workspace`, or
+- run **Dev Containers: Open Workspace in Container** from the host if you keep a
+  copy of the workspace file alongside your `.devcontainer`
+
+VS Code reloads into the multi-root view. Adding a root later needs a reload to
+show up.
+
+### Where settings go
+
+Settings in `devcontainer.json` apply to the whole window. Anything that should
+differ per repository - a two-space tab in the YAML repo, four in the .NET one -
+belongs in the `folders` entries of the workspace file instead, which `ws`
+leaves alone for you to edit.
+
+### The limitation worth knowing
+
+Every root shares the one container. VS Code cannot run a container per folder
+in a single window, and that remains an open feature request upstream. This
+suits a team standardised on one toolchain, which is the normal DevOps case. It
+does not suit polyglot repositories that each need a different runtime version.
+
 ## 📋 Included Tools
 
 | Tool | Purpose |
 |------|---------|
+| `ws` | Manage the roots of the multi-root VS Code workspace |
 | Terraform | Infrastructure provisioning |
 | Terragrunt | Terraform wrapper for DRY configurations |
 | tflint | Terraform linting |
@@ -104,6 +178,8 @@ devcontainer-devops/
 │       │   ├── .zshrc          # ZSH configuration
 │       │   ├── .claude/        # Claude Code defaults
 │       │   └── .config/        # PowerShell profile and theme
+│       ├── workspace/          # Multi-root workspace tooling
+│       │   └── ws              # Manages roots in devops.code-workspace
 │       └── entrypoint.sh       # Container entrypoint for home dir init
 ├── tests/
 │   ├── integration-test.sh     # Integration tests
@@ -179,6 +255,7 @@ The devcontainer uses Docker volumes for persistent storage:
 - **Workspace Volume**: `dev-workspace-<user>` mounted at `/workspace`
 - **Home Volume**: `dev-home-<user>` mounted at `/home/vscode`
 - **Bind Mount**: The local workspace folder mounted at `/workspace/devcontainer`
+- **Workspace File**: `/workspace/devops.code-workspace`, created by `ws init`
 - **Permissions**: Automatically configured via `postCreateCommand`
 - **Home Init**: Entrypoint script copies default configs on first run
 
@@ -332,6 +409,14 @@ builds from the local `Dockerfile` by default — to pin, add the versions to it
 
 ## 📝 Usage Examples
 
+### Multi-root workspace
+
+```bash
+ws add https://github.com/acme/platform-terraform.git
+ws list
+ws rm platform-terraform
+```
+
 ### Terraform
 
 ```bash
@@ -405,6 +490,14 @@ MIT - see [`LICENSE`](LICENSE).
 - Check the `Dockerfile` has a `RUN /tmp/install/install-<tool>.sh` step
 - Confirm it appears in `tests/validate-tools.sh`, then run that script
 - Rebuild the container
+
+### A repository is missing from the multi-root workspace
+
+- `ws list` shows the roots actually recorded in `/workspace/devops.code-workspace`
+- Adding a root needs a window reload before VS Code shows it
+- A repository has to sit **directly** under `/workspace` to be a legal root -
+  nested paths and `../` paths will not open
+- If the workspace file was never created, run `ws init`
 
 ### A home-directory tool is missing or stale after a rebuild
 
