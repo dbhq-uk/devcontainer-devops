@@ -156,6 +156,13 @@ COPY ./files/codex/codex-init /usr/local/bin/codex-init
 RUN chmod +x /usr/local/bin/codex-init && \
     chmod 0644 /usr/local/share/codex/config.toml.tmpl
 
+# Multi-root workspace helper: `ws` manages the roots of
+# /workspace/devops.code-workspace so several repositories are open in one
+# window. /workspace is a named volume, which makes every repository under it a
+# sub-folder of the workspace file - the layout VS Code requires.
+COPY ./files/workspace/ws /usr/local/bin/ws
+RUN chmod +x /usr/local/bin/ws
+
 # Set zsh as default shell and prepare home directory template
 RUN chsh -s /bin/zsh ${USERNAME} && \
     cp -r /home/vscode/. /tmp-home

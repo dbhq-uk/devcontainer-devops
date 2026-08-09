@@ -12,6 +12,10 @@ contained on a given date; it cannot promise a compatibility contract.
 
 ### Added
 
+- Multi-root workspace support: a `ws` command that clones repositories into the
+  persistent `/workspace` volume and manages the roots of
+  `/workspace/devops.code-workspace`, so several repositories open in one
+  container. Created automatically by `postCreateCommand`
 - Complete devcontainer configuration for DevOps workflows
 - Dockerfile with multi-tool installation
 - Installation scripts with isolated /tmp directories for:

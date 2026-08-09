@@ -1,0 +1,146 @@
+#!/bin/bash
+# ws - manage the roots of the multi-root VS Code workspace.
+#
+# The container mounts /workspace as a named volume that outlives rebuilds, so
+# every repository cloned under it is a sub-folder of the workspace file's own
+# directory. That is the layout VS Code requires: a multi-root workspace may
+# only reference relative paths to sub-folders of the folder holding the
+# .code-workspace file. Parent-relative paths (../other-repo) do not open.
+set -euo pipefail
+
+WORKSPACE_ROOT="${WORKSPACE_ROOT:-/workspace}"
+WORKSPACE_FILE="${WORKSPACE_FILE:-${WORKSPACE_ROOT}/devops.code-workspace}"
+
+die() {
+    echo "ws: $*" >&2
+    exit 1
+}
+
+# Write JSON to the workspace file via a temp file so an interrupted run cannot
+# leave a half-written workspace behind.
+write_workspace() {
+    local tmp
+    tmp="$(mktemp "${WORKSPACE_FILE}.XXXXXX")"
+    cat > "${tmp}"
+    mv "${tmp}" "${WORKSPACE_FILE}"
+}
+
+ensure_workspace() {
+    [ -f "${WORKSPACE_FILE}" ] || die "no workspace file at ${WORKSPACE_FILE} - run 'ws init' first"
+}
+
+# Folder settings live here rather than in devcontainer.json because
+# devcontainer.json settings apply to the whole window. Anything that should
+# differ between a Terraform root and a .NET root has to be per-folder.
+cmd_init() {
+    if [ -f "${WORKSPACE_FILE}" ] && [ "${1:-}" != "--force" ]; then
+        echo "ws: ${WORKSPACE_FILE} already exists (use 'ws init --force' to recreate)"
+        return 0
+    fi
+
+    mkdir -p "${WORKSPACE_ROOT}"
+
+    local folders='[]'
+    # Seed with whatever is already on the volume, so init after the fact picks
+    # up repositories cloned by hand rather than starting empty.
+    local dir name
+    for dir in "${WORKSPACE_ROOT}"/*/; do
+        [ -d "${dir}" ] || continue
+        name="$(basename "${dir}")"
+        folders="$(jq --arg n "${name}" '. + [{name: $n, path: $n}]' <<< "${folders}")"
+    done
+
+    jq -n --argjson folders "${folders}" '{
+        folders: $folders,
+        settings: {
+            "files.exclude": {"**/.git": true},
+            "search.exclude": {"**/.terraform": true, "**/node_modules": true}
+        }
+    }' | write_workspace
+
+    echo "ws: wrote ${WORKSPACE_FILE} with $(jq '.folders | length' "${WORKSPACE_FILE}") root(s)"
+}
+
+cmd_add() {
+    local source="${1:-}"
+    [ -n "${source}" ] || die "usage: ws add <git-url|directory> [name]"
+    ensure_workspace
+
+    local name="${2:-}"
+    local target
+
+    if [[ "${source}" =~ ^(https?://|git@|ssh://|file://) ]]; then
+        [ -n "${name}" ] || name="$(basename "${source}" .git)"
+        target="${WORKSPACE_ROOT}/${name}"
+        if [ -d "${target}" ]; then
+            echo "ws: ${target} already exists, not re-cloning"
+        else
+            echo "ws: cloning ${source} into ${target}"
+            git clone "${source}" "${target}"
+        fi
+    else
+        # An existing directory - accept either a bare name or a path, but it
+        # has to sit directly under the workspace root to be a legal root.
+        name="${name:-$(basename "${source}")}"
+        target="${WORKSPACE_ROOT}/${name}"
+        [ -d "${target}" ] || die "${target} does not exist - clone it under ${WORKSPACE_ROOT} first"
+    fi
+
+    if jq -e --arg n "${name}" '.folders[] | select(.path == $n)' "${WORKSPACE_FILE}" > /dev/null 2>&1; then
+        echo "ws: '${name}' is already a root"
+        return 0
+    fi
+
+    jq --arg n "${name}" '.folders += [{name: $n, path: $n}]' "${WORKSPACE_FILE}" | write_workspace
+    echo "ws: added '${name}' - reload the workspace to pick it up"
+}
+
+cmd_rm() {
+    local name="${1:-}"
+    [ -n "${name}" ] || die "usage: ws rm <name>"
+    ensure_workspace
+
+    jq -e --arg n "${name}" '.folders[] | select(.path == $n)' "${WORKSPACE_FILE}" > /dev/null 2>&1 \
+        || die "'${name}' is not a root of this workspace"
+
+    jq --arg n "${name}" '.folders |= map(select(.path != $n))' "${WORKSPACE_FILE}" | write_workspace
+    echo "ws: removed '${name}' from the workspace (the clone at ${WORKSPACE_ROOT}/${name} is untouched)"
+}
+
+cmd_list() {
+    ensure_workspace
+    local count
+    count="$(jq '.folders | length' "${WORKSPACE_FILE}")"
+    if [ "${count}" -eq 0 ]; then
+        echo "ws: no roots yet - add one with 'ws add <git-url>'"
+        return 0
+    fi
+    echo "Roots in ${WORKSPACE_FILE}:"
+    jq -r '.folders[] | "  \(.name)\t\(.path)"' "${WORKSPACE_FILE}"
+}
+
+usage() {
+    cat <<'EOF'
+ws - manage the roots of the multi-root VS Code workspace
+
+Usage:
+  ws init [--force]           Create the workspace file, seeding it with any
+                              repositories already on the /workspace volume
+  ws add <git-url> [name]     Clone a repository and add it as a root
+  ws add <directory> [name]   Add a repository already on the volume
+  ws rm <name>                Remove a root (the clone stays on disk)
+  ws list                     Show the current roots
+
+Open the result with File > Open Workspace and pick devops.code-workspace, or
+run "Dev Containers: Open Workspace in Container" from the host.
+EOF
+}
+
+case "${1:-}" in
+    init) shift; cmd_init "$@" ;;
+    add)  shift; cmd_add "$@" ;;
+    rm)   shift; cmd_rm "$@" ;;
+    list|ls) shift; cmd_list "$@" ;;
+    ""|-h|--help|help) usage ;;
+    *) die "unknown command '${1}' (try 'ws --help')" ;;
+esac
