@@ -85,33 +85,36 @@ jobs:
     runs-on: ubuntu-24.04
     permissions:
       contents: write
-      packages: read
+      artifact-metadata: read
     steps:
       - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
 
-      - name: Log in to GHCR
-        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+      # One SPDX document per architecture, scanned in the build job. Each is
+      # around 52 MB of JSON, which is a hostile download to hang off a release
+      # page, and it is highly repetitive - measured at 93% compression on
+      # v2026.08.04 - so both ship gzipped.
+      - name: Download SBOMs
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          path: /tmp/sbom
+          pattern: sbom-*
+          merge-multiple: true
 
-      # The SBOM is already attached to the image as a build attestation; this
-      # pulls it out into a file so the release has a downloadable copy.
-      # Two architectures' worth of package inventory is well over 100 MB of
-      # JSON, which is a hostile download to hang off a release page. It is
-      # highly repetitive, so it compresses hard - measured at 138.5 MB down to
-      # 10.0 MB on v2026.08.04, a saving of 93%.
-      - name: Extract SBOM
+      - name: Compress SBOMs
         run: |
           set -euo pipefail
-          docker buildx imagetools inspect \
-            "ghcr.io/${{ github.repository }}@${{ needs.build.outputs.digest }}" \
-            --format '{{ json .SBOM }}' > sbom.json
-          raw="$(wc -c < sbom.json)"
-          gzip -9 sbom.json
-          gz="$(wc -c < sbom.json.gz)"
-          echo "SBOM: ${raw} bytes raw, ${gz} bytes gzipped"
+          shopt -s nullglob
+          files=(/tmp/sbom/*.spdx.json)
+          if [ ${#files[@]} -eq 0 ]; then
+            echo "::error::no SBOMs were downloaded - nothing to attach"
+            exit 1
+          fi
+          for f in "${files[@]}"; do
+            raw="$(wc -c < "$f")"
+            gzip -9 "$f"
+            gz="$(wc -c < "${f}.gz")"
+            echo "$(basename "$f"): ${raw} bytes raw, ${gz} bytes gzipped"
+          done
 
       - name: Create release
         env:
@@ -139,17 +142,13 @@ jobs:
           gh attestation verify oci://ghcr.io/${{ github.repository }}:${VERSION} -R ${{ github.repository }}
           \`\`\`
 
-          \`sbom.json.gz\` below is the CycloneDX SBOM for both architectures,
-          gunzip to read. The same data is attached to the image itself as a
-          build attestation:
-
-          \`\`\`
-          docker buildx imagetools inspect ghcr.io/${{ github.repository }}:${VERSION} --format '{{ json .SBOM }}'
-          \`\`\`
+          \`sbom-amd64.spdx.json.gz\` and \`sbom-arm64.spdx.json.gz\` below are the
+          SPDX SBOMs for each architecture, generated with Syft. Gunzip to read;
+          each is an ordinary SPDX 2.3 document any SPDX tool will accept.
           EOF
 
           gh release create "v${VERSION}" \
             --target "${GITHUB_SHA}" \
             --title "v${VERSION}" \
             --notes-file notes.md \
-            sbom.json.gz
+            /tmp/sbom/*.spdx.json.gz

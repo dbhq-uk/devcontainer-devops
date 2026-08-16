@@ -101,7 +101,7 @@ Developer      GitHub Actions          GHCR            DevContainer
    │                  │    manifest list │                   │
    │                  │                  │                   │
    │                  │─── Attest ──────▶│                   │
-   │                  │    SBOM + SLSA   │                   │
+   │                  │    SLSA build    │                   │
    │                  │                  │                   │
    │─────────────── Pull Image ─────────────────────────────▶│
    │                  │                  │                   │
@@ -188,11 +188,21 @@ honour. A digest is the only stable identifier; releases record theirs.
 
 ### Supply chain
 
-BuildKit generates an SBOM and full provenance for each pushed image, and
-`actions/attest` signs the merged manifest with a short-lived Sigstore
-certificate, pushing the attestation to the registry as an OCI referrer. That
-single mechanism covers signing - a separate cosign step would sign the same
-digest a second time with the same trust root, and was left out for that reason.
+BuildKit generates full provenance for each pushed image, and `actions/attest`
+signs the merged manifest with a short-lived Sigstore certificate, pushing the
+attestation to the registry as an OCI referrer. That single mechanism covers
+signing - a separate cosign step would sign the same digest a second time with
+the same trust root, and was left out for that reason.
+
+The SBOM is deliberately not a BuildKit attestation. BuildKit bundles one as an
+in-toto statement and enforces a 40 MiB ceiling on it; this image's SPDX document
+runs to about 52 MB per architecture, and the ceiling only started being enforced
+in BuildKit v0.32, which broke the weekly release with no change to this
+repository. Syft scans the tested image in the build job instead, and each
+release carries one SPDX document per architecture. The size that made the
+attestation impossible is inherent - a container this broad has some 6,800
+packages and 50,000 catalogued files - so the fix was to stop routing it through
+a mechanism with a cap we do not control.
 
 Trivy scans report to the Security tab and never gate the publish. An image
 bundling the Azure CLI, Ansible and a .NET SDK carries upstream HIGH findings at
