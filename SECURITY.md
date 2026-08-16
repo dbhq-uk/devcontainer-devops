@@ -55,8 +55,9 @@ Include:
    - Images are published to the GitHub Container Registry, public and
      anonymously pullable
    - Every build is scanned by Trivy, with findings reported to the Security tab
-   - Every published image carries an SBOM and Sigstore-signed SLSA build
-     provenance - verify before use (see below)
+   - Every published image carries Sigstore-signed SLSA build provenance, and
+     every release ships an SPDX SBOM per architecture - verify before use
+     (see below)
    - CI authenticates with the repository's own `GITHUB_TOKEN`; there are no
      registry credentials to store or rotate
 
@@ -162,11 +163,13 @@ gh attestation verify oci://ghcr.io/dbhq-uk/devcontainer-devops:latest \
   -R dbhq-uk/devcontainer-devops
 ```
 
-Inspect its SBOM:
+Inspect its SBOM. One SPDX document per architecture is attached to the release
+that published the image:
 
 ```bash
-docker buildx imagetools inspect ghcr.io/dbhq-uk/devcontainer-devops:latest \
-  --format '{{ json .SBOM }}'
+gh release download --repo dbhq-uk/devcontainer-devops \
+  --pattern 'sbom-amd64.spdx.json.gz'
+gunzip sbom-amd64.spdx.json.gz
 ```
 
 Scan it yourself:
