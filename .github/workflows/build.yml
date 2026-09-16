@@ -42,6 +42,12 @@ env:
   DOCKERFILE: .devcontainer/Dockerfile
   BUILD_CONTEXT: .devcontainer
 
+# The default for every job below. A job that needs more declares it itself;
+# an explicit floor here means a new job cannot silently inherit an org
+# setting somebody widened.
+permissions:
+  contents: read
+
 jobs:
   lint:
     name: lint
